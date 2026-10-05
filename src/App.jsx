@@ -1,5 +1,6 @@
 import {BrowserRouter, Routes, Route, Link } from "react-router-dom"
 import { AppBar, Toolbar, Typography, Drawer, List, ListItemButton, ListItemText } from "@mui/material"
+import Articulos from './pages/Articulos'
 
 
 function App() {
@@ -38,7 +39,7 @@ function App() {
             <Routes>
               <Route path="/" element={<h1>Dashboard</h1>}/>
               <Route path="/impresoras" element={<h1>Impresoras</h1>}/>
-              <Route path="/articulos" element={<h1>Artículos</h1>}/>
+              <Route path="/articulos" element={<Articulos/>}/>
               <Route path="/historial" element={<h1>Historial</h1>}/>
               <Route path="*" element={<h1>404 - No encontrado</h1>}/>
             </Routes>
