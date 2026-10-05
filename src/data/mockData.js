@@ -15,7 +15,7 @@ export const categorias = [
 // ]
 
 export const articulos = [
-    {id: 1, nombre:"Toner HP 26A", categoria_id: 1, sn:"asdfasfas" , stock_actual: 5, stock_minimo: 3, activo:true},
+    {id: 1, nombre:"Toner HP 26A", categoria_id: 1, sn:"asdfasfas" , stock_actual: 2, stock_minimo: 3, activo:true},
     {id: 2, nombre:"Teclado usb", categoria_id: 4, sn:"" , stock_actual: 26, stock_minimo: 3, activo:true},
     {id: 3, nombre:"Mouse usb", categoria_id: 3, sn:"" , stock_actual: 23, stock_minimo: 3, activo:true},
     {id: 4, nombre:"Cable HDMI 2mts", categoria_id: 5, sn:"" , stock_actual: 7, stock_minimo: 3, activo:true},

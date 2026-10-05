@@ -1,16 +1,13 @@
 import {Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Chip, TextField, Button, Box} from '@mui/material'
-import { articulos } from '../data/mockData'
 import { useState } from 'react';
 
-function Articulos(){
+function Articulos({articulos, setArticulos}){
 
-    const [articulosState, setArticulosState] = useState(articulos);
     const [nombre, setNombre] = useState("")
-
+    
     function agregar(){
         if(!nombre) return
-        const nuevo = {id: Date.now(), nombre, sn:'NUEVO', stock_actual:0, stock_minimo:5}
-        setArticulosState([...articulosState, nuevo])
+        setArticulos([...articulos, {id: Date.now(), nombre, sn:'NUEVO', stock_actual:0, stock_minimo:5}])
         setNombre("")
     }
 
@@ -31,7 +28,7 @@ function Articulos(){
                     </TableRow>
                 </TableHead>
                 <TableBody>
-                    {articulosState.map((a) => (
+                    {articulos.map((a) => (
                         <TableRow key={a.id}>
                             <TableCell>{a.nombre}</TableCell>
                             <TableCell>{a.sn}</TableCell>
