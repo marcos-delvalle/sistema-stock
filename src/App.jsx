@@ -47,7 +47,7 @@ function App() {
               <Route path="/impresoras" element={<h1>Impresoras</h1>}/>
               <Route path="/articulos" element={<Articulos articulos={articulosState}
               setArticulos= {setArticulosState}/>}/>
-              <Route path="/historial" element={<Historial movimientos={movimientosState}
+              <Route path="/historial" element={<Historial movimientos={movimientosState} articulos={articulosState}
               setMovimientos={setMovimientosState}/>}/>
               <Route path="*" element={<h1>404 - No encontrado</h1>}/>
             </Routes>
