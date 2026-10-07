@@ -4,6 +4,7 @@ import Articulos from './pages/Articulos'
 import Dashboard from './pages/Dashboard'
 import Historial from "./pages/Historial"
 import Impresoras from "./pages/Impresoras"
+import Toners from "./pages/Toners"
 import { articulos, movimientos } from "./data/mockData"
 import { impresoras, compatibilidades } from "./data/mockData"
 import { useState } from "react"
@@ -18,8 +19,9 @@ function App() {
 
   const menuItems = [
     {texto: 'Dashboard', ruta: '/'},
-    {texto: 'Articulos', ruta: '/articulos'},
+    {texto: 'Toners', ruta: '/toners'},
     {texto: 'Impresoras', ruta: '/impresoras'},
+    {texto: 'Articulos', ruta: '/articulos'}  ,
     {texto: 'Historial', ruta: '/historial'}
   ]
 
@@ -47,6 +49,7 @@ function App() {
           <main style={{flexGrow:1, padding:24, marginTop:64}}>
             <Routes>
               <Route path="/" element={<Dashboard articulos= {articulosState}/>}/>
+              <Route path="/toners" element={<Toners articulos={articulosState} impresoras={impresorasState} compatibilidades={compatibilidades}/>}/>
               <Route path="/impresoras" element={<Impresoras impresoras={impresorasState} articulos={articulosState} compatibilidades={compatibilidades}/>}/>
               <Route path="/articulos" element={<Articulos articulos={articulosState}
               setArticulos= {setArticulosState}/>}/>

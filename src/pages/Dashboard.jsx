@@ -1,4 +1,4 @@
-import { Card, CardContent, Typography, Box, List, ListItem, ListItemText, Chip } from '@mui/material'
+import { Card, CardContent, Typography, Box, List, ListItem, ListItemText, Chip, Paper } from '@mui/material'
 import {articulos, movimientos} from '../data/mockData'
 
 function Dashboard({articulos}) {
@@ -33,21 +33,21 @@ function Dashboard({articulos}) {
                 </CardContent>
             </Card>
         </Box>
-
-        <h2>Alertas de stock bajo</h2>
-        {bajoStock.length === 0 ? (
-            <p>Todo en orden 👌</p>
-        ) : (
-            <List>
-                {bajoStock.map((a) => (
-                    <ListItem key={a.id}>
-                        <ListItemText primary={a.nombre}/>
-                        <Chip label={a.stock_actual + ' / min ' + a.stock_minimo} color='error'/>
-                    </ListItem>
-                ))}
-            </List>
-        )}
-
+        <Box sx={{padding:'1em'}}component={Paper}>
+            <h2>Alertas de stock bajo</h2>
+            {bajoStock.length === 0 ? (
+                <p>Todo en orden 👌</p>
+            ) : (
+                <List>
+                    {bajoStock.map((a) => (
+                        <ListItem key={a.id}>
+                            <ListItemText primary={a.nombre}/>
+                            <Chip label={a.stock_actual + ' / min ' + a.stock_minimo} color='error'/>
+                        </ListItem>
+                    ))}
+                </List>
+            )}
+        </Box>
         </>
     )
 }

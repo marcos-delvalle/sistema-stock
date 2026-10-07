@@ -25,7 +25,7 @@ function Impresoras({impresoras, articulos, compatibilidades}){
                                 {compatibilidades
                                 .filter((c) => c.impresora_id === imp.id)
                                 .map((c) => articulos.find((a) => a.id === c.articulo_id)?.nombre)
-                                .join(', ') || 'Sin compatibles'}
+                                .map((c) => <Chip label={c}></Chip>) || 'Sin compatibles'}
                             </TableCell>
                             <TableCell>{imp.tipo}</TableCell>
                             <TableCell>{imp.ubicacion}</TableCell>
