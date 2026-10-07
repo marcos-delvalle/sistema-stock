@@ -6,13 +6,21 @@ export const categorias = [
     {id: 5, nombre:"Cable"}
 ]
 
-// export const impresoras = [
-//     {id: 1, modelo:"M320F", marca:"", ubicacion="", tipo:"", activo=true},
-//     {id: 2, modelo:"M430", marca:"", ubicacion="", tipo:"", activo=true},
-//     {id: 3, modelo:"HP", marca:"", ubicacion="", tipo:"", activo=true},
-//     {id: 4, modelo:"", marca:"", ubicacion="", tipo:"", activo=true},
-//     {id: 5, modelo:"", marca:"", ubicacion="", tipo:"", activo=true}
-// ]
+export const impresoras = [
+    {id: 1, marca:"Ricoh", modelo:"M320F", ubicacion:"Contaduria", tipo:"Láser", activo:true},
+    {id: 2, marca:"Ricoh", modelo:"M430", ubicacion:"Juzgado de faltas 1", tipo:"Láser", activo:true},
+    {id: 3, marca:"HP", modelo:"1102", ubicacion:"Obras públicas", tipo:"Láser", activo:true},
+    {id: 4, marca:"HP", modelo:"M605", ubicacion:"Prensa", tipo:"Láser", activo:true},
+    {id: 5, marca:"Samsung", modelo:"M2020", ubicacion:"Notificaciones", tipo:"Láser", activo:true}
+]
+
+export const compatibilidades = [
+    {impresora_id: 1, articulo_id:  1},
+    {impresora_id: 2, articulo_id:  1},
+    {impresora_id: 3, articulo_id:  1},
+    {impresora_id: 4, articulo_id:  5},
+    {impresora_id: 5, articulo_id:  5},
+]
 
 export const articulos = [
     {id: 1, nombre:"Toner HP 26A", categoria_id: 1, sn:"asdfasfas" , stock_actual: 2, stock_minimo: 3, activo:true},
