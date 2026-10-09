@@ -5,8 +5,9 @@ import Dashboard from './pages/Dashboard'
 import Historial from "./pages/Historial"
 import Impresoras from "./pages/Impresoras"
 import Toners from "./pages/Toners"
+import Dependencias from "./pages/Dependencias"
 import NuevoMovimientoDialog from "./components/NuevoMovimientoDialog"
-import { articulos, movimientos } from "./data/mockData"
+import { articulos, movimientos, dependencias, oficinas, unidades, modelos } from "./data/mockData"
 import { impresoras, compatibilidades } from "./data/mockData"
 import { useState } from "react"
 import { Height, Margin, Add } from "@mui/icons-material"
@@ -19,13 +20,16 @@ function App() {
   const [movimientosState, setMovimientosState] = useState(movimientos)
   const [impresorasState, setImpresorasState] = useState(impresoras)
   const [dialogoAbierto, setDialogoAbierto] = useState(false)
+  const [unidadesState, setUnidadesState] = useState(unidades)
+  const [modelosState, setModelosState] = useState(modelos)
 
   const menuItems = [
     {texto: 'Dashboard', ruta: '/'},
     {texto: 'Toners', ruta: '/toners'},
     {texto: 'Impresoras', ruta: '/impresoras'},
     {texto: 'Articulos', ruta: '/articulos'}  ,
-    {texto: 'Historial', ruta: '/historial'}
+    {texto: 'Historial', ruta: '/historial'},
+    {texto: 'Dependencias', ruta: '/dependencias'}
   ]
 
   return(
@@ -34,7 +38,7 @@ function App() {
         <div style={{display:'flex'}}>
           <AppBar position="fixed" sx={{zIndex: 1201 }}>
             <Toolbar>
-              <Typography variant="h6">Soporte técnico - Stock</Typography>
+              <Typography variant="h6">Soporte Técnico - Stock</Typography>
             </Toolbar>
           </AppBar>
 
@@ -62,13 +66,40 @@ function App() {
           />
           <main style={{flexGrow:1, padding:24, marginTop:64}}>
             <Routes>
-              <Route path="/" element={<Dashboard articulos= {articulosState}/>}/>
-              <Route path="/toners" element={<Toners articulos={articulosState} impresoras={impresorasState} compatibilidades={compatibilidades}/>}/>
-              <Route path="/impresoras" element={<Impresoras impresoras={impresorasState} articulos={articulosState} compatibilidades={compatibilidades}/>}/>
-              <Route path="/articulos" element={<Articulos articulos={articulosState}
-              setArticulos= {setArticulosState}/>}/>
-              <Route path="/historial" element={<Historial movimientos={movimientosState} articulos={articulosState}
-              setMovimientos={setMovimientosState}/>}/>
+              <Route path="/" element={
+                <Dashboard 
+                articulos= {articulosState}/>}/>
+              <Route path="/toners" element={
+                <Toners 
+                articulos={articulosState} 
+                impresoras={impresorasState} 
+                compatibilidades={compatibilidades}
+                />}/>
+              <Route path="/impresoras" element={
+                <Impresoras 
+                impresoras={impresorasState} 
+                articulos={articulosState} 
+                compatibilidades={compatibilidades}
+                />}/>
+              <Route path="/articulos" element={
+                <Articulos 
+                articulos={articulosState}
+                setArticulos= {setArticulosState}
+                />}/>
+              <Route path="/historial" element={
+                <Historial 
+                movimientos={movimientosState} 
+                articulos={articulosState}
+                setMovimientos={setMovimientosState}
+              />}/>
+              <Route path="/dependencias" element={
+                <Dependencias 
+                dependencias={dependencias}
+                oficinas={oficinas}
+                movimientos={movimientosState}
+                modelos={modelosState}
+                unidades={unidades}
+              />}/>
               <Route path="*" element={<h1>404 - No encontrado</h1>}/>
             </Routes>
           </main>
