@@ -44,6 +44,9 @@ function NuevoMovimientoDialog({abierto, onCerrar, articulos, setArticulos, setM
                         onChange={(e, nuevo) => setArticuloId(nuevo ? nuevo.id : '')}
                         renderInput={(params) => <TextField {...params} label="Artículo" />}
                     />
+                    <Autocomplete
+                        
+                    />
 
                     <TextField select label="Tipo" value={tipo} onChange={(e) => setTipo(e.target.value)}>
                         <MenuItem value="entrada">Entrada</MenuItem>
@@ -59,21 +62,11 @@ function NuevoMovimientoDialog({abierto, onCerrar, articulos, setArticulos, setM
                             setCantidad(v < 1 ? 1 : v)
                         }}
                     />
-                    <TextField
+                    {/* <TextField
                         label="Destino"
                         value={destino}
                         onChange={(e) => setDestino(e.target.value)}
-                    />
-                    {/* <TextField select label="Articulo" value={articuloId} onChange={(e) => setArticuloId(e.target.value)}>
-                        {articulos.map((a) => <MenuItem key={a.id}
-                        value={a.id}>{a.nombre}</MenuItem>)}
-                    </TextField> */}
-                    {/* <TextField select label="Tipo" value={tipo} onChange={(e) => setTipo(e.target.value)}>
-                        <MenuItem value="entrada">Entrada</MenuItem>
-                        <MenuItem value="salida">Salida</MenuItem>
-                    </TextField>
-                    <TextField input label="Cantidad" type="number" value={cantidad} onChange={(e) => setCantidad(e.target.value)} />
-                    <TextField select label="Destino" value={destino} onChange={(e) => setDestino(e.target.value)}/> */}
+                    /> */}
                     <Button variant='contained' onClick={registrar}>Registrar</Button>
                 </Box>
             </DialogContent>

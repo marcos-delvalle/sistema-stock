@@ -1,37 +1,25 @@
-import {Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Chip} from '@mui/material'
+import {Box, Card, CardContent, Typography , Button, Chip, CardHeader} from '@mui/material'
 
-function Impresoras({impresoras, articulos, compatibilidades}){
+function Impresoras({modelos, unidades, oficinas, articulos, setModelos, setUnidades}){
 
     return(
         <>
         <h1>Impresoras</h1>
-        <TableContainer component={Paper}>
-            <Table>
-                <TableHead>
-                    <TableRow>
-                        <TableCell>MARCA</TableCell>
-                        <TableCell>MODELO</TableCell>
-                        <TableCell>COMPATIBLE</TableCell>
-                        <TableCell>UBICACIÓN</TableCell>
-                    </TableRow>
-                </TableHead>
-                <TableBody>
-                    {impresoras.map((imp) => (
-                        <TableRow key={imp.id}>
-                            <TableCell>{imp.marca}</TableCell>
-                            <TableCell>{imp.modelo}</TableCell>
-                            <TableCell>
-                                {compatibilidades
-                                .filter((c) => c.impresora_id === imp.id)
-                                .map((c) => articulos.find((a) => a.id === c.articulo_id)?.nombre)
-                                .map((c) => <Chip label={c}></Chip>) || 'Sin compatibles'}
-                            </TableCell>
-                            <TableCell>{imp.ubicacion}</TableCell>
-                        </TableRow>
-                    ))}
-                </TableBody>
-            </Table>
-        </TableContainer>
+        <Box sx={{display:'flex', flexWrap:'wrap', gap:2}}>
+            {modelos.map((m) => (
+                <Card key={m.id} sx={{minWidth: 220}}>
+                    <CardContent>
+                        <Typography variant='h6'>{m.marca} {m.modelo}</Typography>
+                        <Typography variant='body2'>
+                            Toner: {articulos.find((a) => a.id === m.articulo_id)?.nombre}
+                        </Typography>
+                        <Typography variant='body2'>
+                            Asignadas: {unidades.filter((u) => u.modelo_id === m.id).length}
+                        </Typography>
+                    </CardContent>
+                </Card>
+            ))}
+        </Box>
         </>
     )
 }

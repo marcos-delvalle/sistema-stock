@@ -7,8 +7,7 @@ import Impresoras from "./pages/Impresoras"
 import Toners from "./pages/Toners"
 import Dependencias from "./pages/Dependencias"
 import NuevoMovimientoDialog from "./components/NuevoMovimientoDialog"
-import { articulos, movimientos, dependencias, oficinas, unidades, modelos } from "./data/mockData"
-import { impresoras, compatibilidades } from "./data/mockData"
+import { impresoras, articulos, movimientos, dependencias, oficinas, unidades, modelos } from "./data/mockData"
 import { useState } from "react"
 import { Height, Margin, Add } from "@mui/icons-material"
 
@@ -72,14 +71,17 @@ function App() {
               <Route path="/toners" element={
                 <Toners 
                 articulos={articulosState} 
-                impresoras={impresorasState} 
-                compatibilidades={compatibilidades}
+                unidades={unidadesState}
+                modelos={modelosState}
                 />}/>
               <Route path="/impresoras" element={
                 <Impresoras 
-                impresoras={impresorasState} 
+                modelos={modelosState} 
+                setModelos={setModelosState}
+                unidades={unidadesState}
+                setUnidades={setUnidadesState}
+                oficinas={oficinas}
                 articulos={articulosState} 
-                compatibilidades={compatibilidades}
                 />}/>
               <Route path="/articulos" element={
                 <Articulos 

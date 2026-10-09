@@ -14,17 +14,17 @@ export const impresoras = [
     {id: 5, marca:"Samsung", modelo:"M2020", ubicacion:"Notificaciones", activo:true}
 ]
 
-export const compatibilidades = [
-    {impresora_id: 1, articulo_id:  1},
-    {impresora_id: 2, articulo_id:  1},
-    {impresora_id: 3, articulo_id:  1},
-    {impresora_id: 4, articulo_id:  5},
-    {impresora_id: 5, articulo_id:  5},
-]
+// export const compatibilidades = [
+//     {impresora_id: 1, articulo_id:  1},
+//     {impresora_id: 2, articulo_id:  1},
+//     {impresora_id: 3, articulo_id:  1},
+//     {impresora_id: 4, articulo_id:  5},
+//     {impresora_id: 5, articulo_id:  5},
+// ]
 
 export const articulos = [
     {id: 1, nombre:"Toner HP 26A", categoria_id: 1, stock_actual: 2, stock_minimo: 3, activo:true},
-    {id: 2, nombre:"Teclado usb", categoria_id: 4 , stock_actual: 26, stock_minimo: 3, activo:true},
+    {id: 2, nombre:"Teclado usb", categoria_id: 4 , stock_actual: 1, stock_minimo: 3, activo:true},
     {id: 3, nombre:"Mouse usb", categoria_id: 3, stock_actual: 23, stock_minimo: 3, activo:true},
     {id: 4, nombre:"Cable HDMI 2mts", categoria_id: 5, stock_actual: 7, stock_minimo: 3, activo:true},
     {id: 5, nombre:"Toner 258A", categoria_id: 1, stock_actual: 11, stock_minimo: 3, activo:true},

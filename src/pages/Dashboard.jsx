@@ -42,7 +42,7 @@ function Dashboard({articulos}) {
                     {bajoStock.map((a) => (
                         <ListItem key={a.id}>
                             <ListItemText primary={a.nombre}/>
-                            <Chip label={a.stock_actual + ' / min ' + a.stock_minimo} color='error'/>
+                            <Chip label={a.stock_actual + ' restante'} color='error'/>
                         </ListItem>
                     ))}
                 </List>
