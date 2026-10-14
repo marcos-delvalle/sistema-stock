@@ -1,34 +1,34 @@
 import {Dialog, DialogTitle, DialogContent, TextField, Button, MenuItem, Box, Autocomplete} from '@mui/material'
 import {useState} from 'react'
 
-function NuevoMovimientoDialog({abierto, onCerrar, articulos, setArticulos, setMovimientos}){
+function NuevoMovimientoDialog({abierto, onCerrar, articulos, setArticulos, setMovimientos, oficinas}){
     const [articuloId, setArticuloId] = useState("")
     const [tipo, setTipo] = useState("salida")
     const [cantidad, setCantidad] = useState(1)
-    const [destino, setDestino] = useState("")
+    const [oficinaId, setOficinaId] = useState("")
 
     function registrar() {
-    const articulo = articulos.find((a) => a.id === Number(articuloId))
-    if (!articulo || cantidad <= 0) return
+        const articulo = articulos.find((a) => a.id === Number(articuloId))
+        if (!articulo || cantidad <= 0) return
 
-    const nuevoStock = tipo === 'entrada'
-      ? articulo.stock_actual + Number(cantidad)
-      : articulo.stock_actual - Number(cantidad)
+        const nuevoStock = tipo === 'entrada'
+        ? articulo.stock_actual + Number(cantidad)
+        : articulo.stock_actual - Number(cantidad)
 
-    setArticulos(articulos.map((a) =>
-      a.id === articulo.id ? { ...a, stock_actual: nuevoStock } : a
-    ))
+        setArticulos(articulos.map((a) =>
+        a.id === articulo.id ? { ...a, stock_actual: nuevoStock } : a
+        ))
 
-    setMovimientos((prev) => [...prev, {
-      id: Date.now(),
-      articulo_id: articulo.id,
-      tipo,
-      cantidad: Number(cantidad),
-      destino,
-      fecha: new Date().toISOString().slice(0, 10),
-    }])
+        setMovimientos((prev) => [...prev, {
+        id: Date.now(),
+        articulo_id: articulo.id,
+        tipo,
+        cantidad: Number(cantidad),
+        oficinaId,
+        fecha: new Date().toISOString().slice(0, 10),
+        }])
 
-    onCerrar()
+        onCerrar()
   }
 
     return(
@@ -43,9 +43,6 @@ function NuevoMovimientoDialog({abierto, onCerrar, articulos, setArticulos, setM
                         value={articulos.find((a) => a.id === Number(articuloId)) || null}
                         onChange={(e, nuevo) => setArticuloId(nuevo ? nuevo.id : '')}
                         renderInput={(params) => <TextField {...params} label="Artículo" />}
-                    />
-                    <Autocomplete
-                        
                     />
 
                     <TextField select label="Tipo" value={tipo} onChange={(e) => setTipo(e.target.value)}>
@@ -62,16 +59,18 @@ function NuevoMovimientoDialog({abierto, onCerrar, articulos, setArticulos, setM
                             setCantidad(v < 1 ? 1 : v)
                         }}
                     />
-                    {/* <TextField
-                        label="Destino"
-                        value={destino}
-                        onChange={(e) => setDestino(e.target.value)}
-                    /> */}
+                    <Autocomplete
+                        options={oficinas}
+                        getOptionLabel={(o) => o.nombre}
+                        value={oficinas.find((o) => o.id === Number(oficinaId)) || null}
+                        onChange={(e, nueva) => setOficinaId(nueva ? nueva.id : '')}
+                        renderInput={(params) => <TextField {...params}
+                        label="Oficina de destino" />}
+                    />
                     <Button variant='contained' onClick={registrar}>Registrar</Button>
                 </Box>
             </DialogContent>
         </Dialog>
-
         </>
     )
 }

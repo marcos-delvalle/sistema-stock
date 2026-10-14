@@ -27,8 +27,8 @@ function App() {
     {texto: 'Toners', ruta: '/toners'},
     {texto: 'Impresoras', ruta: '/impresoras'},
     {texto: 'Articulos', ruta: '/articulos'}  ,
-    {texto: 'Historial', ruta: '/historial'},
-    {texto: 'Dependencias', ruta: '/dependencias'}
+    {texto: 'Dependencias', ruta: '/dependencias'},
+    {texto: 'Historial', ruta: '/historial'}
   ]
 
   return(
@@ -58,10 +58,11 @@ function App() {
           </Drawer>
           <NuevoMovimientoDialog
             abierto={dialogoAbierto}
-            onCerrar={() => setDialogoAbierto(false)}
+            onCerrar={() => setDialogoCrear(false)}
             articulos={articulosState}
             setArticulos={setArticulosState}
             setMovimientos={setMovimientosState}
+            oficinas={oficinas}
           />
           <main style={{flexGrow:1, padding:24, marginTop:64}}>
             <Routes>
@@ -88,12 +89,6 @@ function App() {
                 articulos={articulosState}
                 setArticulos= {setArticulosState}
                 />}/>
-              <Route path="/historial" element={
-                <Historial 
-                movimientos={movimientosState} 
-                articulos={articulosState}
-                setMovimientos={setMovimientosState}
-              />}/>
               <Route path="/dependencias" element={
                 <Dependencias 
                 dependencias={dependencias}
@@ -101,6 +96,12 @@ function App() {
                 movimientos={movimientosState}
                 modelos={modelosState}
                 unidades={unidades}
+              />}/>
+              <Route path="/historial" element={
+                <Historial 
+                movimientos={movimientosState} 
+                articulos={articulosState}
+                setMovimientos={setMovimientosState}
               />}/>
               <Route path="*" element={<h1>404 - No encontrado</h1>}/>
             </Routes>
