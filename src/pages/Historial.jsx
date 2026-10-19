@@ -3,6 +3,10 @@ import { formatearFecha } from '../utils/fecha'
 
 function Historial({ movimientos, articulos, oficinas }) {
 
+    const ordenados = [...movimientos].sort(
+        (a, b) => String(b.fecha).localeCompare(String(a.fecha)) || b.id - a.id
+    )
+
     return (
         <>
             <Typography variant="h4" sx={{ mb: 2 }}>Historial</Typography>
@@ -19,7 +23,7 @@ function Historial({ movimientos, articulos, oficinas }) {
                         </TableRow>
                     </TableHead>
                     <TableBody>
-                        {movimientos.map((m) => (
+                        {ordenados.map((m) => (
                             <TableRow key={m.id}>
                                 <TableCell>{formatearFecha(m.fecha)}</TableCell>
                                 <TableCell>{articulos.find((a) => a.id === m.articulo_id)?.nombre}</TableCell>

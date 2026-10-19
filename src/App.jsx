@@ -70,8 +70,15 @@ function App() {
           <main style={{flexGrow:1, padding:24, marginTop:64}}>
             <Routes>
               <Route path="/" element={
-                <Dashboard 
-                articulos= {articulosState}/>}/>
+                <Dashboard
+                articulos={articulosState}
+                movimientos={movimientosState}
+                modelos={modelosState}
+                unidades={unidadesState}
+                dependencias={dependenciasState}
+                oficinas={oficinasState}
+                categorias={categorias}
+                />}/>
               <Route path="/toners" element={
                 <Toners
                 articulos={articulosState}
