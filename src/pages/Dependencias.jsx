@@ -25,7 +25,7 @@ function Dependencias({dependencias, oficinas, unidades, modelos, movimientos}) 
                         }
                     </Typography>
                     <Typography>
-                        Movimientos: {movimientos.filter((m) => m.oficina_id === oficina.id).lenght}
+                        Movimientos: {movimientos.filter((m) => m.oficina_id === oficina.id).length}
                     </Typography>
                     <Typography>
                         

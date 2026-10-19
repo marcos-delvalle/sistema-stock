@@ -1,9 +1,7 @@
 export const categorias = [
     {id: 1, nombre:"Tóner"},
-    {id: 2, nombre:"Cartucho"},
-    {id: 3, nombre:"Mouse"},
-    {id: 4, nombre:"Teclado"},
-    {id: 5, nombre:"Cable"}
+    {id: 2, nombre:"Periféricos"},
+    {id: 3, nombre:"Cable"}
 ]
 
 export const impresoras = [
@@ -24,9 +22,9 @@ export const impresoras = [
 
 export const articulos = [
     {id: 1, nombre:"Toner HP 26A", categoria_id: 1, stock_actual: 2, stock_minimo: 3, activo:true},
-    {id: 2, nombre:"Teclado usb", categoria_id: 4 , stock_actual: 1, stock_minimo: 3, activo:true},
-    {id: 3, nombre:"Mouse usb", categoria_id: 3, stock_actual: 23, stock_minimo: 3, activo:true},
-    {id: 4, nombre:"Cable HDMI 2mts", categoria_id: 5, stock_actual: 7, stock_minimo: 3, activo:true},
+    {id: 2, nombre:"Teclado usb", categoria_id: 2, stock_actual: 1, stock_minimo: 3, activo:true},
+    {id: 3, nombre:"Mouse usb", categoria_id: 2, stock_actual: 23, stock_minimo: 3, activo:true},
+    {id: 4, nombre:"Cable HDMI 2mts", categoria_id: 3, stock_actual: 7, stock_minimo: 3, activo:true},
     {id: 5, nombre:"Toner 258A", categoria_id: 1, stock_actual: 11, stock_minimo: 3, activo:true},
 ]
 
@@ -56,7 +54,7 @@ export const modelos = [
 ]
 
 export const unidades = [
-    {id: 1, articulo_id: 1, oficina_id: 1, ip: "192.168.0.10", estado:"activa"},
-    {id: 2, articulo_id: 1, oficina_id: 2, ip: "192.168.0.20", estado:"activa"},
-    {id: 3, articulo_id: 5, oficina_id: 4, ip: "192.168.0.30", estado:"activa"},
+    {id: 1, modelo_id: 1, nombre:"HP M605", oficina_id: 1, ip: "192.168.0.10", estado:"activa"},
+    {id: 2, modelo_id: 1, nombre:"HP M605", oficina_id: 2, ip: "192.168.0.20", estado:"activa"},
+    {id: 3, modelo_id: 2, nombre:"Ricoh M320F", oficina_id: 4, ip: "192.168.0.30", estado:"activa"},
 ]

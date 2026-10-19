@@ -75,6 +75,7 @@ function App() {
                 categorias={categorias}
                 unidades={unidadesState}
                 modelos={modelosState}
+                setModelos={setModelosState}
                 />}/>
               <Route path="/impresoras" element={
                 <Impresoras 
@@ -84,6 +85,7 @@ function App() {
                 setUnidades={setUnidadesState}
                 oficinas={oficinas}
                 articulos={articulosState} 
+                categorias={categorias}
                 />}/>
               <Route path="/articulos" element={
                 <Articulos
