@@ -73,8 +73,8 @@ function OficinaDetalleDialog({
                                     <Table size="small">
                                         <TableHead>
                                             <TableRow>
-                                                <TableCell>Nombre</TableCell>
                                                 <TableCell>Modelo</TableCell>
+                                                <TableCell>Nombre</TableCell>
                                                 <TableCell>IP</TableCell>
                                                 <TableCell>Estado</TableCell>
                                                 <TableCell align="right">Acciones</TableCell>
