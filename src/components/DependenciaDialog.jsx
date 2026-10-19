@@ -1,17 +1,26 @@
 import {
-    Alert, Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, TextField,
+    Alert, Box, Button, Dialog, DialogActions, DialogContent, DialogTitle,
+    Divider, TextField, Typography,
 } from '@mui/material'
+import { Add } from '@mui/icons-material'
 import { useState } from 'react'
 
 /**
  * Alta y edición de una dependencia (edificio).
  * La baja se bloquea si todavía tiene oficinas asignadas.
+ * En modo edición permite abrir el alta de una oficina de esta dependencia.
  */
-function DependenciaDialog({ abierto, onCerrar, dependencia, oficinas, setDependencias }) {
+function DependenciaDialog({
+    abierto, onCerrar, dependencia, oficinas, setDependencias, onAgregarOficina,
+}) {
     const editando = Boolean(dependencia)
 
     const [nombre, setNombre] = useState(dependencia?.nombre || '')
     const [error, setError] = useState('')
+
+    const cantidadOficinas = dependencia
+        ? oficinas.filter((o) => o.dependencia_id === dependencia.id).length
+        : 0
 
     function guardar() {
         if (!nombre.trim()) {
@@ -62,6 +71,24 @@ function DependenciaDialog({ abierto, onCerrar, dependencia, oficinas, setDepend
                         onChange={(e) => { setNombre(e.target.value); setError('') }}
                         autoFocus
                     />
+
+                    {editando && onAgregarOficina && (
+                        <>
+                            <Divider />
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <Typography variant="body2" color="text.secondary">
+                                    Oficinas asignadas: {cantidadOficinas}
+                                </Typography>
+                                <Button
+                                    size="small"
+                                    startIcon={<Add />}
+                                    onClick={onAgregarOficina}
+                                >
+                                    Agregar oficina
+                                </Button>
+                            </Box>
+                        </>
+                    )}
                 </Box>
             </DialogContent>
 

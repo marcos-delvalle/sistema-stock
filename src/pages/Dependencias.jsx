@@ -173,15 +173,6 @@ function Dependencias({
                                 </Box>
                             </AccordionSummary>
 
-                            <Button
-                                size="small"
-                                startIcon={<Add />}
-                                sx={{ mr: 1, whiteSpace: 'nowrap' }}
-                                onClick={() => abrirNuevaOficina(dep.id)}
-                            >
-                                Agregar oficina
-                            </Button>
-
                             <Tooltip title="Editar dependencia">
                                 <IconButton
                                     sx={{ mr: 1 }}
@@ -285,6 +276,7 @@ function Dependencias({
                     dependencia={depEditando}
                     oficinas={oficinas}
                     setDependencias={setDependencias}
+                    onAgregarOficina={depEditando ? () => abrirNuevaOficina(depEditando.id) : undefined}
                 />
             )}
 
