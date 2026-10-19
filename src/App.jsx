@@ -7,9 +7,9 @@ import Impresoras from "./pages/Impresoras"
 import Toners from "./pages/Toners"
 import Dependencias from "./pages/Dependencias"
 import NuevoMovimientoDialog from "./components/NuevoMovimientoDialog"
-import { impresoras, articulos, movimientos, dependencias, oficinas, unidades, modelos } from "./data/mockData"
+import { categorias, articulos, movimientos, dependencias, oficinas, unidades, modelos } from "./data/mockData"
 import { useState } from "react"
-import { Height, Margin, Add } from "@mui/icons-material"
+import { Add } from "@mui/icons-material"
 
 
 function App() {
@@ -17,7 +17,6 @@ function App() {
 
   const [articulosState, setArticulosState] = useState(articulos)
   const [movimientosState, setMovimientosState] = useState(movimientos)
-  const [impresorasState, setImpresorasState] = useState(impresoras)
   const [dialogoAbierto, setDialogoAbierto] = useState(false)
   const [unidadesState, setUnidadesState] = useState(unidades)
   const [modelosState, setModelosState] = useState(modelos)
@@ -58,7 +57,7 @@ function App() {
           </Drawer>
           <NuevoMovimientoDialog
             abierto={dialogoAbierto}
-            onCerrar={() => setDialogoCrear(false)}
+            onCerrar={() => setDialogoAbierto(false)}
             articulos={articulosState}
             setArticulos={setArticulosState}
             setMovimientos={setMovimientosState}
@@ -70,8 +69,10 @@ function App() {
                 <Dashboard 
                 articulos= {articulosState}/>}/>
               <Route path="/toners" element={
-                <Toners 
-                articulos={articulosState} 
+                <Toners
+                articulos={articulosState}
+                setArticulos={setArticulosState}
+                categorias={categorias}
                 unidades={unidadesState}
                 modelos={modelosState}
                 />}/>
@@ -85,23 +86,24 @@ function App() {
                 articulos={articulosState} 
                 />}/>
               <Route path="/articulos" element={
-                <Articulos 
+                <Articulos
                 articulos={articulosState}
                 setArticulos= {setArticulosState}
+                categorias={categorias}
                 />}/>
               <Route path="/dependencias" element={
-                <Dependencias 
+                <Dependencias
                 dependencias={dependencias}
                 oficinas={oficinas}
                 movimientos={movimientosState}
                 modelos={modelosState}
-                unidades={unidades}
+                unidades={unidadesState}
               />}/>
               <Route path="/historial" element={
-                <Historial 
-                movimientos={movimientosState} 
+                <Historial
+                movimientos={movimientosState}
                 articulos={articulosState}
-                setMovimientos={setMovimientosState}
+                oficinas={oficinas}
               />}/>
               <Route path="*" element={<h1>404 - No encontrado</h1>}/>
             </Routes>
