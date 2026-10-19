@@ -20,6 +20,9 @@ function App() {
   const [dialogoAbierto, setDialogoAbierto] = useState(false)
   const [unidadesState, setUnidadesState] = useState(unidades)
   const [modelosState, setModelosState] = useState(modelos)
+  const [dependenciasState, setDependenciasState] = useState(dependencias)
+  const [oficinasState, setOficinasState] = useState(oficinas)
+  const [versionMovimiento, setVersionMovimiento] = useState(0)
 
   const menuItems = [
     {texto: 'Dashboard', ruta: '/'},
@@ -50,18 +53,19 @@ function App() {
                   </ListItemButton>
                 ))}
               </List>
-              <IconButton variant="outlined" sx={{mt:'auto', m:2, width:'fit-content'}} color="primary" onClick={() => setDialogoAbierto(true)}>
+              <IconButton variant="outlined" sx={{mt:'auto', m:2, width:'fit-content'}} color="primary" onClick={() => { setVersionMovimiento((v) => v + 1); setDialogoAbierto(true) }}>
                 <Add sx={{width:'100%', height:'3em'}}/>
               </IconButton>
             </Box>
           </Drawer>
           <NuevoMovimientoDialog
+            key={versionMovimiento}
             abierto={dialogoAbierto}
             onCerrar={() => setDialogoAbierto(false)}
             articulos={articulosState}
             setArticulos={setArticulosState}
             setMovimientos={setMovimientosState}
-            oficinas={oficinas}
+            oficinas={oficinasState}
           />
           <main style={{flexGrow:1, padding:24, marginTop:64}}>
             <Routes>
@@ -83,7 +87,7 @@ function App() {
                 setModelos={setModelosState}
                 unidades={unidadesState}
                 setUnidades={setUnidadesState}
-                oficinas={oficinas}
+                oficinas={oficinasState}
                 articulos={articulosState} 
                 categorias={categorias}
                 />}/>
@@ -95,17 +99,21 @@ function App() {
                 />}/>
               <Route path="/dependencias" element={
                 <Dependencias
-                dependencias={dependencias}
-                oficinas={oficinas}
+                dependencias={dependenciasState}
+                setDependencias={setDependenciasState}
+                oficinas={oficinasState}
+                setOficinas={setOficinasState}
                 movimientos={movimientosState}
                 modelos={modelosState}
                 unidades={unidadesState}
+                setUnidades={setUnidadesState}
+                articulos={articulosState}
               />}/>
               <Route path="/historial" element={
                 <Historial
                 movimientos={movimientosState}
                 articulos={articulosState}
-                oficinas={oficinas}
+                oficinas={oficinasState}
               />}/>
               <Route path="*" element={<h1>404 - No encontrado</h1>}/>
             </Routes>

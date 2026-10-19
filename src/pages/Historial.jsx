@@ -1,4 +1,5 @@
-import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Chip, Box, Typography } from '@mui/material'
+import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Chip, Typography } from '@mui/material'
+import { formatearFecha } from '../utils/fecha'
 
 function Historial({ movimientos, articulos, oficinas }) {
 
@@ -20,7 +21,7 @@ function Historial({ movimientos, articulos, oficinas }) {
                     <TableBody>
                         {movimientos.map((m) => (
                             <TableRow key={m.id}>
-                                <TableCell>{m.fecha}</TableCell>
+                                <TableCell>{formatearFecha(m.fecha)}</TableCell>
                                 <TableCell>{articulos.find((a) => a.id === m.articulo_id)?.nombre}</TableCell>
                                 <TableCell>
                                     <Chip

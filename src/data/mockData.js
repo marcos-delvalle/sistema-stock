@@ -29,10 +29,10 @@ export const articulos = [
 ]
 
 export const movimientos = [
-    {id: 1, articulo_id: 2, tipo:"salida", cantidad:1, oficina_id:1, fecha: 2026-9-29},
-    {id: 2, articulo_id: 4, tipo:"entrada", cantidad:10, oficina_id:2, fecha: 2026-9-28},
-    {id: 3, articulo_id: 3, tipo:"salida", cantidad:1, oficina_id:3, fecha: 2026-9-27},
-    {id: 4, articulo_id: 1, tipo:"salida", cantidad:1, oficina_id:4, fecha:2026-9-26 }
+    {id: 1, articulo_id: 2, tipo:"salida", cantidad:1, oficina_id:1, fecha:'2026-09-29'},
+    {id: 2, articulo_id: 4, tipo:"entrada", cantidad:10, oficina_id:2, fecha:'2026-09-28'},
+    {id: 3, articulo_id: 3, tipo:"salida", cantidad:1, oficina_id:3, fecha:'2026-09-27'},
+    {id: 4, articulo_id: 1, tipo:"salida", cantidad:1, oficina_id:4, fecha:'2026-09-26' }
 ]
 
 export const dependencias = [

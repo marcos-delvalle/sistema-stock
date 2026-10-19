@@ -1,40 +1,226 @@
-import { Box, Typography } from '@mui/material'
+import {
+    Accordion, AccordionDetails, AccordionSummary, Box, Button, Chip,
+    IconButton, Table, TableBody, TableCell, TableContainer, TableHead,
+    TableRow, Tooltip, Typography,
+} from '@mui/material'
+import { Add, Business, Edit, ExpandMore, Visibility } from '@mui/icons-material'
+import { useState } from 'react'
+import DependenciaDialog from '../components/DependenciaDialog'
+import OficinaDialog from '../components/OficinaDialog'
+import OficinaDetalleDialog from '../components/OficinaDetalleDialog'
 
-function Dependencias({dependencias, oficinas, unidades, modelos, movimientos}) {
+function Dependencias({
+    dependencias, setDependencias, oficinas, setOficinas,
+    unidades, setUnidades, modelos, movimientos, articulos,
+}) {
+
+    // undefined = cerrado · null = creando · objeto = editando
+    const [depEditando, setDepEditando] = useState(undefined)
+    const [oficinaEditando, setOficinaEditando] = useState(undefined)
+    const [depParaOficina, setDepParaOficina] = useState(null)
+    const [oficinaDetalle, setOficinaDetalle] = useState(null)
 
     return (
-    <>
-    <h1>Dependencias</h1>
-    {dependencias.map((dep) => (
-        <Box key={dep.id}>
-            <Typography variant='h5'>{dep.nombre}</Typography>
-            {oficinas
-            .filter((o) => o.dependencia_id === dep.id)
-            .map((oficina) => (
-                <Box key={oficina.id}>
-                    <Typography variant='h6'>{oficina.nombre}</Typography>
-                    <Typography variant='body2'>
-                        Unidades: {
-                            unidades
-                                .filter((u) => u.oficina_id === oficina.id)
-                                .map((u) => {
-                                    const modelo = modelos.find((m) => m.id === u.modelo_id)
-                                    return `${modelo?.marca} ${modelo?.modelo} - IP: ${u.ip} (${u.estado})`
-                                })
-                                .join(', ')
-                        }
-                    </Typography>
-                    <Typography>
-                        Movimientos: {movimientos.filter((m) => m.oficina_id === oficina.id).length}
-                    </Typography>
-                    <Typography>
-                        
-                    </Typography>
-                </Box>
-            ))}
-        </Box>
-    ))}
-    </> 
+        <>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                <Typography variant="h4">Dependencias</Typography>
+                <Button
+                    variant="contained"
+                    startIcon={<Add />}
+                    onClick={() => setDepEditando(null)}
+                >
+                    Nueva dependencia
+                </Button>
+            </Box>
+
+            {dependencias.length === 0 && (
+                <Typography color="text.secondary" sx={{ py: 4 }}>
+                    Todavía no hay dependencias cargadas.
+                </Typography>
+            )}
+
+            {dependencias.map((dep) => {
+                const oficinasDep = oficinas
+                    .filter((o) => o.dependencia_id === dep.id)
+                    .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'))
+
+                const idsOficinas = oficinasDep.map((o) => o.id)
+                const impresorasDep = unidades.filter((u) => idsOficinas.includes(u.oficina_id))
+                const salidasDep = movimientos.filter(
+                    (m) => m.tipo === 'salida' && idsOficinas.includes(m.oficina_id)
+                )
+
+                return (
+                    <Accordion
+                        key={dep.id}
+                        disableGutters
+                        sx={{
+                            mb: 1.5,
+                            border: '1px solid',
+                            borderColor: 'divider',
+                            borderRadius: 2,
+                            '&:before': { display: 'none' },
+                            '&.Mui-expanded': { mt: 0, mb: 1.5 },
+                        }}
+                    >
+                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                            <AccordionSummary expandIcon={<ExpandMore />} sx={{ flexGrow: 1 }}>
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
+                                    <Business color="primary" />
+                                    <Typography variant="h6">{dep.nombre}</Typography>
+                                    <Chip size="small" variant="outlined" label={`${oficinasDep.length} oficinas`} />
+                                    <Chip size="small" variant="outlined" label={`${impresorasDep.length} impresoras`} />
+                                    <Chip size="small" variant="outlined" label={`${salidasDep.length} salidas`} />
+                                </Box>
+                            </AccordionSummary>
+
+                            <Tooltip title="Editar dependencia">
+                                <IconButton
+                                    sx={{ mr: 1 }}
+                                    onClick={() => setDepEditando(dep)}
+                                >
+                                    <Edit />
+                                </IconButton>
+                            </Tooltip>
+                        </Box>
+
+                        <AccordionDetails>
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                                <Typography variant="subtitle1">Oficinas</Typography>
+                                <Button
+                                    size="small"
+                                    startIcon={<Add />}
+                                    onClick={() => {
+                                        setOficinaEditando(null)
+                                        setDepParaOficina(dep.id)
+                                    }}
+                                >
+                                    Agregar oficina
+                                </Button>
+                            </Box>
+
+                            <TableContainer>
+                                <Table size="small">
+                                    <TableHead>
+                                        <TableRow>
+                                            <TableCell>Oficina</TableCell>
+                                            <TableCell>Impresoras</TableCell>
+                                            <TableCell>Salidas</TableCell>
+                                            <TableCell align="right">Acciones</TableCell>
+                                        </TableRow>
+                                    </TableHead>
+                                    <TableBody>
+                                        {oficinasDep.length === 0 ? (
+                                            <TableRow>
+                                                <TableCell colSpan={4} align="center" sx={{ py: 3, color: 'text.secondary' }}>
+                                                    Esta dependencia todavía no tiene oficinas.
+                                                </TableCell>
+                                            </TableRow>
+                                        ) : oficinasDep.map((oficina) => {
+                                            const cantImpresoras = unidades.filter(
+                                                (u) => u.oficina_id === oficina.id
+                                            ).length
+
+                                            const cantSalidas = movimientos.filter(
+                                                (m) => m.tipo === 'salida' && m.oficina_id === oficina.id
+                                            ).length
+
+                                            return (
+                                                <TableRow
+                                                    key={oficina.id}
+                                                    hover
+                                                    sx={{ cursor: 'pointer' }}
+                                                    onClick={() => setOficinaDetalle(oficina)}
+                                                >
+                                                    <TableCell>{oficina.nombre}</TableCell>
+                                                    <TableCell>
+                                                        <Chip
+                                                            size="small"
+                                                            label={cantImpresoras}
+                                                            color={cantImpresoras > 0 ? 'primary' : 'default'}
+                                                            variant={cantImpresoras > 0 ? 'filled' : 'outlined'}
+                                                        />
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        <Chip
+                                                            size="small"
+                                                            label={cantSalidas}
+                                                            color={cantSalidas > 0 ? 'info' : 'default'}
+                                                            variant={cantSalidas > 0 ? 'filled' : 'outlined'}
+                                                        />
+                                                    </TableCell>
+                                                    <TableCell
+                                                        align="right"
+                                                        onClick={(e) => e.stopPropagation()}
+                                                    >
+                                                        <Tooltip title="Ver impresoras e historial">
+                                                            <IconButton
+                                                                size="small"
+                                                                onClick={() => setOficinaDetalle(oficina)}
+                                                            >
+                                                                <Visibility fontSize="small" />
+                                                            </IconButton>
+                                                        </Tooltip>
+                                                        <Tooltip title="Editar oficina">
+                                                            <IconButton
+                                                                size="small"
+                                                                onClick={() => {
+                                                                    setOficinaEditando(oficina)
+                                                                    setDepParaOficina(oficina.dependencia_id)
+                                                                }}
+                                                            >
+                                                                <Edit fontSize="small" />
+                                                            </IconButton>
+                                                        </Tooltip>
+                                                    </TableCell>
+                                                </TableRow>
+                                            )
+                                        })}
+                                    </TableBody>
+                                </Table>
+                            </TableContainer>
+                        </AccordionDetails>
+                    </Accordion>
+                )
+            })}
+
+            {depEditando !== undefined && (
+                <DependenciaDialog
+                    abierto
+                    onCerrar={() => setDepEditando(undefined)}
+                    dependencia={depEditando}
+                    oficinas={oficinas}
+                    setDependencias={setDependencias}
+                />
+            )}
+
+            {oficinaEditando !== undefined && (
+                <OficinaDialog
+                    abierto
+                    onCerrar={() => setOficinaEditando(undefined)}
+                    oficina={oficinaEditando}
+                    dependenciaId={oficinaEditando?.dependencia_id ?? depParaOficina}
+                    dependencias={dependencias}
+                    unidades={unidades}
+                    setOficinas={setOficinas}
+                />
+            )}
+
+            {oficinaDetalle && (
+                <OficinaDetalleDialog
+                    abierto
+                    onCerrar={() => setOficinaDetalle(null)}
+                    oficina={oficinaDetalle}
+                    dependencia={dependencias.find((d) => d.id === oficinaDetalle.dependencia_id)}
+                    unidades={unidades}
+                    modelos={modelos}
+                    setUnidades={setUnidades}
+                    oficinas={oficinas}
+                    articulos={articulos}
+                    movimientos={movimientos}
+                />
+            )}
+        </>
     )
 }
 
