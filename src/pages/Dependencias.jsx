@@ -56,6 +56,13 @@ function Dependencias({
 
     const totalOficinasVisibles = resultados.reduce((acc, r) => acc + r.oficinas.length, 0)
 
+    function abrirNuevaOficina(depId) {
+        setBusqueda('')
+        setExpandidas((prev) => ({ ...prev, [depId]: true }))
+        setOficinaEditando(null)
+        setDepParaOficina(depId)
+    }
+
     return (
         <>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
@@ -166,6 +173,15 @@ function Dependencias({
                                 </Box>
                             </AccordionSummary>
 
+                            <Button
+                                size="small"
+                                startIcon={<Add />}
+                                sx={{ mr: 1, whiteSpace: 'nowrap' }}
+                                onClick={() => abrirNuevaOficina(dep.id)}
+                            >
+                                Agregar oficina
+                            </Button>
+
                             <Tooltip title="Editar dependencia">
                                 <IconButton
                                     sx={{ mr: 1 }}
@@ -177,22 +193,6 @@ function Dependencias({
                         </Box>
 
                         <AccordionDetails>
-                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-                                <Typography variant="subtitle1">Oficinas</Typography>
-                                <Button
-                                    size="small"
-                                    startIcon={<Add />}
-                                    onClick={() => {
-                                        setBusqueda('')
-                                        setExpandidas((prev) => ({ ...prev, [dep.id]: true }))
-                                        setOficinaEditando(null)
-                                        setDepParaOficina(dep.id)
-                                    }}
-                                >
-                                    Agregar oficina
-                                </Button>
-                            </Box>
-
                             <TableContainer>
                                 <Table size="small">
                                     <TableHead>
