@@ -86,10 +86,10 @@ function OficinaDetalleDialog({
 
                                                 return (
                                                     <TableRow key={u.id}>
-                                                        <TableCell>{u.nombre || '—'}</TableCell>
                                                         <TableCell>
                                                             {modelo ? `${modelo.marca} ${modelo.modelo}` : '—'}
                                                         </TableCell>
+                                                        <TableCell>{u.nombre || '—'}</TableCell>
                                                         <TableCell>
                                                             {u.ip ? (
                                                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
