@@ -398,7 +398,7 @@ function Dashboard({
                                     )
                                 })}
                             </Box>
-                            <Button size="small" onClick={() => navigate('/articulos')} sx={{ mt: 1 }}>
+                            <Button variant='outlined' size="small" onClick={() => navigate('/articulos')} sx={{ mt: 1 }}>
                                 Ver artículos
                             </Button>
                         </>
@@ -413,7 +413,7 @@ function Dashboard({
                         titulo="Últimos movimientos"
                         subtitulo="Los 6 registros más recientes"
                         accion={
-                            <Button size="small" onClick={() => navigate('/historial')}>
+                            <Button variant='outlined' size="small" onClick={() => navigate('/historial')}>
                                 Ver historial
                             </Button>
                         }
@@ -514,7 +514,7 @@ function Dashboard({
                                     </Box>
                                 ))}
                             </Box>
-                            <Button size="small" onClick={() => navigate('/dependencias')} sx={{ mt: 1 }}>
+                            <Button variant='outlined' size="small" onClick={() => navigate('/dependencias')} sx={{ mt: 1 }}>
                                 Ver dependencias
                             </Button>
                         </>
