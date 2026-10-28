@@ -88,7 +88,13 @@ npm run db:check
 
 ## 5. Levantar el proyecto
 
-En dos terminales:
+Con un solo comando (API + PostgreSQL + React):
+
+```powershell
+npm run dev:all
+```
+
+O en dos terminales:
 
 ```powershell
 npm run dev:server   # API en http://localhost:3000
