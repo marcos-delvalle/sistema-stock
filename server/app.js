@@ -5,7 +5,16 @@ import express from 'express'
 import helmet from 'helmet'
 import cookieParser from 'cookie-parser'
 import { env } from './lib/env.js'
+import { requiereAdmin } from './middleware/auth.js'
 import { rutasSalud } from './routes/salud.js'
+import { rutasAuth } from './routes/auth.js'
+import { rutasCategorias } from './routes/categorias.js'
+import { rutasArticulos } from './routes/articulos.js'
+import { rutasModelos } from './routes/modelos.js'
+import { rutasUnidades } from './routes/unidades.js'
+import { rutasDependencias } from './routes/dependencias.js'
+import { rutasOficinas } from './routes/oficinas.js'
+import { rutasMovimientos } from './routes/movimientos.js'
 import { manejarErrores, noEncontrado } from './middleware/errores.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
@@ -43,8 +52,21 @@ export function crearApp() {
     next()
   })
 
-  // Rutas de la API.
+  // Rutas públicas.
   app.use('/api/salud', rutasSalud)
+  app.use('/api/auth', rutasAuth)
+
+  // A partir de acá, todo /api exige sesión de administrador.
+  app.use('/api', requiereAdmin)
+
+  // Rutas protegidas de la API.
+  app.use('/api/categorias', rutasCategorias)
+  app.use('/api/articulos', rutasArticulos)
+  app.use('/api/modelos', rutasModelos)
+  app.use('/api/unidades', rutasUnidades)
+  app.use('/api/dependencias', rutasDependencias)
+  app.use('/api/oficinas', rutasOficinas)
+  app.use('/api/movimientos', rutasMovimientos)
 
   // En producción, Express también entrega el React compilado.
   if (env.nodoEnv === 'production') {

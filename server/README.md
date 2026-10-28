@@ -115,7 +115,87 @@ Respuesta esperada:
 Si `ok` es `false`, la API está viva pero no puede conectarse a PostgreSQL:
 revisar que el servicio esté corriendo y que `DATABASE_URL` sea correcta.
 
-## 6. Uso desde la red local
+## 6. API y autenticación
+
+Todas las rutas `/api` requieren sesión, excepto `/api/salud` y `/api/auth/login`.
+
+### Login
+
+```powershell
+$cuerpo = @{ usuario = 'admin'; password = 'TU_CLAVE_DE_SERVER_ENV' } | ConvertTo-Json
+$sesion = New-Object Microsoft.PowerShell.Commands.WebRequestSession
+
+Invoke-RestMethod -Uri http://localhost:3000/api/auth/login `
+  -Method Post -ContentType 'application/json' -Body $cuerpo -WebSession $sesion
+
+Invoke-RestMethod -Uri http://localhost:3000/api/articulos -WebSession $sesion
+```
+
+La sesión dura 12 horas y viaja en una cookie `httpOnly` (JavaScript no puede leerla).
+`POST /api/auth/logout` borra la cookie y `GET /api/auth/me` devuelve el usuario actual.
+
+### Rutas
+
+| Método | Ruta | Descripción |
+|---|---|---|
+| GET | `/api/salud` | Estado del servidor y de la base (pública) |
+| POST | `/api/auth/login` | Inicia sesión (pública) |
+| POST | `/api/auth/logout` | Cierra sesión |
+| GET | `/api/auth/me` | Usuario de la sesión |
+| GET/POST | `/api/categorias` | Lista / alta |
+| PUT/DELETE | `/api/categorias/:id` | Edición / baja |
+| GET/POST | `/api/articulos` | Lista / alta (`stock_actual > 0` genera una entrada) |
+| PUT | `/api/articulos/:id` | Edita nombre, categoría y stock mínimo (no el stock) |
+| PATCH | `/api/articulos/:id/activo` | Activa / desactiva |
+| DELETE | `/api/articulos/:id` | Baja lógica y desasigna modelos |
+| GET/POST | `/api/modelos` | Lista / alta |
+| PUT | `/api/modelos/:id` | Edición completa |
+| PUT | `/api/modelos/:id/compatibilidad` | Asigna / quita el tóner |
+| DELETE | `/api/modelos/:id` | Baja (bloqueada si tiene unidades) |
+| GET/POST | `/api/unidades` | Lista / alta |
+| PUT/DELETE | `/api/unidades/:id` | Edición / baja |
+| GET/POST | `/api/dependencias` | Lista / alta |
+| PUT | `/api/dependencias/:id` | Edición |
+| PATCH | `/api/dependencias/:id/activo` | Activa / desactiva |
+| DELETE | `/api/dependencias/:id` | Baja lógica (bloqueada con oficinas activas) |
+| GET/POST | `/api/oficinas` | Lista / alta |
+| PUT | `/api/oficinas/:id` | Edición |
+| PATCH | `/api/oficinas/:id/activo` | Activa / desactiva |
+| DELETE | `/api/oficinas/:id` | Baja lógica (bloqueada con impresoras) |
+| GET | `/api/oficinas/:id/unidades` | Impresoras de la oficina |
+| GET | `/api/oficinas/:id/movimientos` | Solo salidas de la oficina |
+| GET | `/api/movimientos` | Historial con filtros |
+| POST | `/api/movimientos` | Alta con transacción de stock |
+
+Filtros de `GET /api/movimientos`: `articulo_id`, `oficina_id`, `tipo`,
+`desde`, `hasta` (formato `YYYY-MM-DD`).
+Filtros de artículos: `categoria_id`, `activo`.
+
+### Reglas de negocio
+
+- **Stock atómico**: el movimiento y el cambio de stock van en una transacción.
+  Si no hay stock, responde `409` y no modifica nada.
+- **Entrada**: no lleva oficina (va al depósito).
+- **Salida**: debe indicar una oficina activa.
+- **Alta de artículo con stock**: genera automáticamente una entrada en el historial.
+- **Bajas**: artículos, dependencias y oficinas usan `activo = false`.
+  Los modelos y las unidades se eliminan físicamente.
+- **Errores**: `400` datos inválidos, `401` sin sesión, `404` no existe,
+  `409` conflicto (stock, duplicados, registros relacionados).
+
+## 7. Estado actual
+
+- [x] PostgreSQL, esquema y migraciones
+- [x] API de lectura y escritura
+- [x] Login único de administrador con cookie `httpOnly`
+- [x] Validaciones y transacciones
+- [ ] Conectar el front (hoy sigue usando datos mock)
+- [ ] Endpoint de resumen del dashboard y paginación del historial
+- [ ] Servicio de Windows, respaldos y puesta en producción
+
+> La base arranca vacía, con las 3 categorías base: Tóner, Periféricos y Cable.
+
+## 8. Uso desde la red local
 
 - El servidor escucha en `0.0.0.0`, así que acepta conexiones de la red.
 - La URL para los compañeros será `http://<IP-de-tu-PC>:3000`.

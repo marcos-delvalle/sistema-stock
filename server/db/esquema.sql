@@ -101,4 +101,9 @@ CREATE INDEX IF NOT EXISTS idx_movimientos_fecha ON movimientos(fecha DESC);
 CREATE INDEX IF NOT EXISTS idx_movimientos_oficina ON movimientos(oficina_id);
 CREATE INDEX IF NOT EXISTS idx_movimientos_articulo ON movimientos(articulo_id);
 
+-- Categorías base del sistema. Son datos de configuración, no stock de ejemplo.
+INSERT INTO categorias (nombre)
+VALUES ('Tóner'), ('Periféricos'), ('Cable')
+ON CONFLICT (nombre) DO NOTHING;
+
 COMMIT;
