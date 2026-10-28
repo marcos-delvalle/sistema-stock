@@ -62,17 +62,31 @@ CREATE DATABASE gestion_stock OWNER stock_app;
 
 ## 3. Configurar `server/.env`
 
-El archivo ya existe (no se versiona). Ajustar la contraseña de `DATABASE_URL`:
+El archivo `.env` no se versiona. En una instalación nueva, copiar la plantilla:
+
+```powershell
+Copy-Item server/.env.example server/.env
+```
+
+Completar los valores reales:
 
 ```env
 PORT=3000
-DATABASE_URL=postgresql://stock_app:una_clave_segura@localhost:5432/gestion_stock
+DATABASE_URL=postgresql://stock_app:TU_CLAVE_DE_BASE@localhost:5432/gestion_stock
 ADMIN_USER=admin
-ADMIN_PASSWORD=Admin-bae87e3a
-JWT_SECRET=...
+ADMIN_PASSWORD=ELEGI_UNA_CLAVE_LARGA_Y_UNICA
+JWT_SECRET=GENERA_UN_SECRETO_ALEATORIO
 ```
 
-`server/.env.example` sirve como plantilla para otra máquina.
+Generar el secreto de sesión:
+
+```powershell
+node -e "console.log(require('node:crypto').randomBytes(48).toString('hex'))"
+```
+
+> No subir `server/.env` al repositorio. Si la contraseña de la base tiene
+> caracteres como `@`, `:`, `/` o `#`, hay que codificarlos en la URL
+> (por ejemplo, `@` → `%40`).
 
 ## 4. Crear las tablas
 
@@ -219,40 +233,64 @@ npm start            # NODE_ENV=production: Express sirve dist/ + API en el puer
 
 ```
 server/
-├── index.js            Arranque y apagado ordenado
-├── app.js              Middlewares, rutas y front compilado
+├── index.js              Arranque en 0.0.0.0 y apagado ordenado
+├── app.js                Middlewares, rutas y front compilado
 ├── lib/
-│   ├── env.js          Carga server/.env
-│   └── http.js         ErrorHttp + asyncHandler
+│   ├── env.js            Carga server/.env
+│   ├── http.js           ErrorHttp + asyncHandler
+│   ├── validar.js        Validación de body y query params
+│   ├── dbErrores.js      Traducción de errores de PostgreSQL
+│   └── transaccion.js    BEGIN / COMMIT / ROLLBACK
 ├── db/
-│   ├── pool.js         Pool de conexiones (consultas parametrizadas)
-│   ├── esquema.sql     Tablas, CHECKs e índices
-│   ├── migrar.js       npm run db:migrate
-│   └── estado.js       npm run db:check
+│   ├── pool.js           Pool de conexiones y parser de fechas
+│   ├── esquema.sql       Tablas, CHECKs, FKs e índices
+│   ├── migrar.js         npm run db:migrate
+│   └── estado.js         npm run db:check
 ├── routes/
-│   └── salud.js        GET /api/salud
+│   ├── salud.js          GET /api/salud
+│   ├── auth.js           Login, logout y sesión
+│   ├── categorias.js     CRUD de categorías
+│   ├── articulos.js      CRUD y baja lógica de artículos
+│   ├── modelos.js        Modelos y compatibilidad con tóner
+│   ├── unidades.js       Impresoras físicas
+│   ├── dependencias.js   Edificios / dependencias
+│   ├── oficinas.js       Oficinas, impresoras e historial
+│   └── movimientos.js    Entradas, salidas y stock
 ├── middleware/
-│   └── errores.js      404 y manejo centralizado de errores
+│   ├── auth.js           Verificación de la cookie de sesión
+│   └── errores.js        404 y manejo centralizado de errores
 ├── scripts/
 │   └── postgres-local.ps1  Arranque/detención del PostgreSQL portable
-└── .env                Credenciales locales (ignorado por git)
+└── .env                  Credenciales locales (ignorado por git)
 ```
 
 ## Conceptos usados
 
 - **Pool**: grupo reutilizable de conexiones a PostgreSQL.
 - **Consulta parametrizada**: `$1, $2...` evita inyección SQL.
-- **Middleware**: función que procesa la petición antes de la ruta (JSON, cookies, logs, auth).
-- **Transacción**: en la próxima fase, el alta de un movimiento y el descuento de stock se
-  ejecutan juntos con `BEGIN / COMMIT / ROLLBACK`.
+- **Middleware**: función que procesa la petición antes de la ruta
+  (JSON, cookies, logs, autenticación).
+- **Transacción**: el movimiento y el cambio de stock se ejecutan juntos
+  con `BEGIN / COMMIT / ROLLBACK`. Si algo falla, no queda stock a medias.
+- **Bloqueo `FOR UPDATE`**: evita que dos salidas simultáneas vendan el mismo stock.
+- **Cookie `httpOnly` + JWT**: JavaScript no puede leer el token; el navegador
+  lo envía automáticamente en cada petición al mismo origen.
 - **Fecha `date` como string**: `pool.js` configura el parser para que `YYYY-MM-DD`
   llegue al front sin corrimientos de zona horaria.
+- **Baja lógica**: artículos, dependencias y oficinas usan `activo = false`;
+  el historial no se pierde.
 
-## Próximas fases
+## Estado y próximas fases
 
-1. Rutas de lectura (`GET`) e integración con el front.
-2. Escritura de artículos y movimientos con transacción de stock.
-3. Dependencias, oficinas, impresoras y compatibilidad.
-4. Dashboard agregado e historial paginado.
-5. Login único de administrador (cookie httpOnly).
-6. Puesta en producción y respaldos.
+- [x] PostgreSQL, esquema y migraciones
+- [x] API de lectura y escritura
+- [x] Login único de administrador con cookie `httpOnly`
+- [x] Validaciones, transacciones y bloqueo de stock
+- [ ] Conectar el front (hoy sigue usando datos mock)
+- [ ] Pantalla de login en React
+- [ ] Endpoint de resumen del dashboard y paginación del historial
+- [ ] Servicio de Windows, respaldos y puesta en producción
+
+> La base arranca vacía, con las 3 categorías base: Tóner, Periféricos y Cable.
+> El frontend todavía muestra datos de demostración: no cargar stock real
+> desde la interfaz hasta completar la integración.
