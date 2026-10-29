@@ -414,7 +414,7 @@ usar desde el navegador; todos los cambios se guardan en PostgreSQL.
 
 El login es único:
 
-- Usuario: `admin`
+- Usuario: el valor de `ADMIN_USER` (por defecto `admin`).
 - Contraseña: la definida en `ADMIN_PASSWORD` dentro de `server/.env`.
 
 La pantalla de login ya está implementada. Al entrar, el front verifica la
