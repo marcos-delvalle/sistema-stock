@@ -209,11 +209,12 @@ Filtros de artículos: `categoria_id`, `activo`.
 - [x] API de lectura y escritura
 - [x] Login único de administrador con cookie `httpOnly`
 - [x] Validaciones y transacciones
-- [ ] Conectar el front (hoy sigue usando datos mock)
+- [x] Frontend integrado: login, datos y mutaciones contra la API
 - [ ] Endpoint de resumen del dashboard y paginación del historial
 - [ ] Servicio de Windows, respaldos y puesta en producción
 
 > La base arranca vacía, con las 3 categorías base: Tóner, Periféricos y Cable.
+> El frontend ya consume la API y guarda los cambios en PostgreSQL.
 
 ## 8. Uso desde la red local
 
@@ -286,11 +287,9 @@ server/
 - [x] API de lectura y escritura
 - [x] Login único de administrador con cookie `httpOnly`
 - [x] Validaciones, transacciones y bloqueo de stock
-- [ ] Conectar el front (hoy sigue usando datos mock)
-- [ ] Pantalla de login en React
+- [x] Frontend integrado: login, datos y mutaciones contra la API
 - [ ] Endpoint de resumen del dashboard y paginación del historial
 - [ ] Servicio de Windows, respaldos y puesta en producción
 
 > La base arranca vacía, con las 3 categorías base: Tóner, Periféricos y Cable.
-> El frontend todavía muestra datos de demostración: no cargar stock real
-> desde la interfaz hasta completar la integración.
+> El frontend ya consume la API y guarda los cambios en PostgreSQL.

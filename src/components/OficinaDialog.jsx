@@ -3,21 +3,25 @@ import {
     MenuItem, TextField,
 } from '@mui/material'
 import { useState } from 'react'
+import { api } from '../api/client'
+import { useDatos } from '../context/DatosContext'
 
 /**
  * Alta y edición de una oficina.
  * Permite moverla de dependencia y bloquea la baja si tiene impresoras asignadas.
  */
 function OficinaDialog({
-    abierto, onCerrar, oficina, dependenciaId, dependencias, unidades, setOficinas,
+    abierto, onCerrar, oficina, dependenciaId, dependencias, unidades,
 }) {
+    const { recargar, notificar } = useDatos()
     const editando = Boolean(oficina)
 
     const [nombre, setNombre] = useState(oficina?.nombre || '')
     const [depId, setDepId] = useState(oficina?.dependencia_id ?? dependenciaId ?? '')
     const [error, setError] = useState('')
+    const [guardando, setGuardando] = useState(false)
 
-    function guardar() {
+    async function guardar() {
         if (!nombre.trim()) {
             setError('El nombre es obligatorio')
             return
@@ -27,42 +31,62 @@ function OficinaDialog({
             return
         }
 
-        if (editando) {
-            setOficinas((prev) => prev.map((o) => (
-                o.id === oficina.id
-                    ? { ...o, nombre: nombre.trim(), dependencia_id: Number(depId) }
-                    : o
-            )))
-        } else {
-            setOficinas((prev) => [...prev, {
-                id: Date.now(),
+        setGuardando(true)
+        setError('')
+
+        try {
+            const cuerpo = {
                 nombre: nombre.trim(),
                 dependencia_id: Number(depId),
-            }])
-        }
+            }
 
-        onCerrar()
+            if (editando) {
+                await api.put(`/oficinas/${oficina.id}`, cuerpo)
+                notificar('Oficina actualizada')
+            } else {
+                await api.post('/oficinas', cuerpo)
+                notificar('Oficina creada')
+            }
+
+            await recargar()
+            onCerrar()
+        } catch (e) {
+            setError(e.message)
+        } finally {
+            setGuardando(false)
+        }
     }
 
-    function eliminar() {
+    async function eliminar() {
         const cantidad = unidades.filter((u) => u.oficina_id === oficina.id).length
 
         if (cantidad > 0) {
             setError(
-                `No se puede eliminar: tiene ${cantidad} impresora${cantidad === 1 ? '' : 's'} asignada${cantidad === 1 ? '' : 's'}. ` +
+                `No se puede dar de baja: tiene ${cantidad} impresora${cantidad === 1 ? '' : 's'} asignada${cantidad === 1 ? '' : 's'}. ` +
                 'Mové o eliminá esas unidades primero.'
             )
             return
         }
 
-        if (!window.confirm(`¿Eliminar "${oficina.nombre}"?`)) return
+        if (!window.confirm(`¿Dar de baja "${oficina.nombre}"?`)) return
 
-        setOficinas((prev) => prev.filter((o) => o.id !== oficina.id))
-        onCerrar()
+        setGuardando(true)
+        setError('')
+
+        try {
+            await api.delete(`/oficinas/${oficina.id}`)
+            notificar('Oficina dada de baja')
+            await recargar()
+            onCerrar()
+        } catch (e) {
+            setError(e.message)
+        } finally {
+            setGuardando(false)
+        }
     }
 
     return (
-        <Dialog open={abierto} onClose={onCerrar} maxWidth="xs" fullWidth>
+        <Dialog open={abierto} onClose={guardando ? undefined : onCerrar} maxWidth="xs" fullWidth>
             <DialogTitle>{editando ? 'Editar oficina' : 'Nueva oficina'}</DialogTitle>
 
             <DialogContent>
@@ -91,14 +115,18 @@ function OficinaDialog({
             </DialogContent>
 
             <DialogActions sx={{ justifyContent: 'space-between' }}>
-                {editando ? (
-                    <Button color="error" onClick={eliminar}>Eliminar</Button>
+                {editando && oficina.activo ? (
+                    <Button color="error" onClick={eliminar} disabled={guardando}>
+                        Dar de baja
+                    </Button>
                 ) : (
                     <span />
                 )}
                 <Box>
-                    <Button onClick={onCerrar}>Cancelar</Button>
-                    <Button variant="contained" onClick={guardar}>Guardar</Button>
+                    <Button onClick={onCerrar} disabled={guardando}>Cancelar</Button>
+                    <Button variant="contained" onClick={guardar} disabled={guardando}>
+                        {guardando ? 'Guardando...' : 'Guardar'}
+                    </Button>
                 </Box>
             </DialogActions>
         </Dialog>

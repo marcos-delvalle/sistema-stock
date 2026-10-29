@@ -3,13 +3,17 @@ import {
     DialogTitle, TextField,
 } from '@mui/material'
 import { useState } from 'react'
+import { api } from '../api/client'
+import { useDatos } from '../context/DatosContext'
 
-function CrearImpresoraDialog({ abierto, onCerrar, articulos, modelos, setModelos, categorias }) {
+function CrearImpresoraDialog({ abierto, onCerrar, articulos, modelos, categorias }) {
+    const { recargar, notificar } = useDatos()
 
     const [marca, setMarca] = useState('')
     const [nombreModelo, setNombreModelo] = useState('')
     const [tonerId, setTonerId] = useState('')
     const [error, setError] = useState('')
+    const [guardando, setGuardando] = useState(false)
 
     const catToner = categorias.find((c) => c.nombre === 'Tóner')
     const toners = articulos.filter((a) => a.categoria_id === catToner?.id && a.activo)
@@ -35,7 +39,7 @@ function CrearImpresoraDialog({ abierto, onCerrar, articulos, modelos, setModelo
         onCerrar()
     }
 
-    function crear() {
+    async function crear() {
         if (!marca.trim() || !nombreModelo.trim() || !tonerId) {
             setError('Completá marca, modelo y tóner compatible.')
             return
@@ -45,23 +49,34 @@ function CrearImpresoraDialog({ abierto, onCerrar, articulos, modelos, setModelo
             m.marca.toLowerCase() === marca.trim().toLowerCase() &&
             m.modelo.toLowerCase() === nombreModelo.trim().toLowerCase()
         )
+
         if (existe) {
             setError('Ya existe un modelo con esa marca y modelo.')
             return
         }
 
-        setModelos((prev) => [...prev, {
-            id: Date.now(),
-            marca: marca.trim(),
-            modelo: nombreModelo.trim(),
-            articulo_id: Number(tonerId),
-        }])
+        setGuardando(true)
+        setError('')
 
-        cerrar()
+        try {
+            await api.post('/modelos', {
+                marca: marca.trim(),
+                modelo: nombreModelo.trim(),
+                articulo_id: Number(tonerId),
+            })
+
+            notificar('Modelo de impresora creado')
+            await recargar()
+            cerrar()
+        } catch (e) {
+            setError(e.message)
+        } finally {
+            setGuardando(false)
+        }
     }
 
     return (
-        <Dialog open={abierto} onClose={cerrar}>
+        <Dialog open={abierto} onClose={guardando ? undefined : cerrar}>
             <DialogTitle>Nueva impresora</DialogTitle>
             <DialogContent>
                 <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1, minWidth: 320 }}>
@@ -95,8 +110,10 @@ function CrearImpresoraDialog({ abierto, onCerrar, articulos, modelos, setModelo
                 </Box>
             </DialogContent>
             <DialogActions>
-                <Button onClick={cerrar}>Cancelar</Button>
-                <Button variant="contained" onClick={crear}>Crear</Button>
+                <Button onClick={cerrar} disabled={guardando}>Cancelar</Button>
+                <Button variant="contained" onClick={crear} disabled={guardando}>
+                    {guardando ? 'Creando...' : 'Crear'}
+                </Button>
             </DialogActions>
         </Dialog>
     )

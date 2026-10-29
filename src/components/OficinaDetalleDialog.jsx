@@ -15,7 +15,7 @@ import { formatearFecha } from '../utils/fecha'
  */
 function OficinaDetalleDialog({
     abierto, onCerrar, oficina, dependencia, unidades, modelos,
-    setUnidades, oficinas, articulos, movimientos,
+    oficinas, articulos, movimientos,
 }) {
     const [tab, setTab] = useState(0)
 
@@ -157,7 +157,7 @@ function OficinaDetalleDialog({
                                                 <TableRow key={m.id}>
                                                     <TableCell>{formatearFecha(m.fecha)}</TableCell>
                                                     <TableCell>
-                                                        {articulos.find((a) => a.id === m.articulo_id)?.nombre || '—'}
+                                                        {m.articulo_nombre || articulos.find((a) => a.id === m.articulo_id)?.nombre || '—'}
                                                     </TableCell>
                                                     <TableCell align="right">{m.cantidad}</TableCell>
                                                 </TableRow>
@@ -185,7 +185,6 @@ function OficinaDetalleDialog({
                     unidad={unidadEditando}
                     oficinas={oficinas}
                     oficinaIdInicial={oficina.id}
-                    setUnidades={setUnidades}
                 />
             )}
         </>

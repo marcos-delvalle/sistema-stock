@@ -26,15 +26,19 @@ function Historial({ movimientos, articulos, oficinas }) {
                         {ordenados.map((m) => (
                             <TableRow key={m.id}>
                                 <TableCell>{formatearFecha(m.fecha)}</TableCell>
-                                <TableCell>{articulos.find((a) => a.id === m.articulo_id)?.nombre}</TableCell>
+                                <TableCell>
+                                    {m.articulo_nombre || articulos.find((a) => a.id === m.articulo_id)?.nombre || '—'}
+                                </TableCell>
                                 <TableCell>
                                     <Chip
-                                        label={m.tipo}
+                                        label={m.tipo === 'entrada' ? 'Entrada' : 'Salida'}
                                         color={m.tipo === 'entrada' ? 'success' : 'primary'}
                                     />
                                 </TableCell>
                                 <TableCell align="right">{m.cantidad}</TableCell>
-                                <TableCell>{oficinas.find((o) => o.id === m.oficina_id)?.nombre || '—'}</TableCell>
+                                <TableCell>
+                                    {m.oficina_nombre || oficinas.find((o) => o.id === m.oficina_id)?.nombre || '—'}
+                                </TableCell>
                             </TableRow>
                         ))}
                     </TableBody>

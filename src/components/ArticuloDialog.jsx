@@ -1,27 +1,20 @@
 import {
-    Button,
-    Dialog,
-    DialogTitle,
-    DialogContent,
-    DialogActions,
-    Box,
-    TextField,
-    Autocomplete,
-    Alert,
-    FormControlLabel,
-    Switch,
-    Divider,
+    Alert, Autocomplete, Box, Button, Dialog, DialogActions, DialogContent,
+    DialogTitle, Divider, FormControlLabel, Switch, TextField,
 } from '@mui/material'
 import { useState } from 'react'
+import { api } from '../api/client'
+import { useDatos } from '../context/DatosContext'
 
 /**
  * Dialog reutilizable para crear y editar artículos (incluidos tóneres).
  *
  * - Si `articulo` viene null  -> modo CREAR
- * - Si `articulo` viene objeto -> modo EDITAR (permite eliminar y cambiar estado)
+ * - Si `articulo` viene objeto -> modo EDITAR (permite dar de baja y cambiar estado)
  * - Si `categoriaIdFija` viene definida, el select de categoría se oculta
  */
-function ArticuloDialog({ abierto, onCerrar, categorias, articulo, categoriaIdFija, setArticulos }) {
+function ArticuloDialog({ abierto, onCerrar, categorias, articulo, categoriaIdFija }) {
+    const { recargar, notificar } = useDatos()
     const editando = Boolean(articulo)
 
     const [nombre, setNombre] = useState(articulo?.nombre || '')
@@ -30,49 +23,81 @@ function ArticuloDialog({ abierto, onCerrar, categorias, articulo, categoriaIdFi
     const [stockInicial, setStockInicial] = useState(0)
     const [activo, setActivo] = useState(articulo?.activo ?? true)
     const [error, setError] = useState('')
+    const [guardando, setGuardando] = useState(false)
 
-    function guardar() {
+    async function guardar() {
         if (!nombre.trim()) {
             setError('El nombre es obligatorio')
             return
         }
 
-        if (editando) {
-            setArticulos((prev) => prev.map((a) => (
-                a.id === articulo.id
-                    ? {
-                        ...a,
-                        nombre,
-                        categoria_id: Number(categoriaId),
-                        stock_minimo: Number(stockMinimo),
-                        activo,
-                    }
-                    : a
-            )))
-        } else {
-            const nuevo = {
-                id: Date.now(),
-                nombre,
-                categoria_id: Number(categoriaId),
-                stock_actual: Number(stockInicial),
-                stock_minimo: Number(stockMinimo),
-                activo: true,
-            }
-            setArticulos((prev) => [...prev, nuevo])
+        const catId = Number(categoriaId)
+
+        if (!catId) {
+            setError('Elegí una categoría')
+            return
         }
 
-        onCerrar()
+        setGuardando(true)
+        setError('')
+
+        try {
+            if (editando) {
+                await api.put(`/articulos/${articulo.id}`, {
+                    nombre: nombre.trim(),
+                    categoria_id: catId,
+                    stock_minimo: Number(stockMinimo),
+                })
+
+                if (activo !== articulo.activo) {
+                    await api.patch(`/articulos/${articulo.id}/activo`, { activo })
+                }
+
+                notificar('Artículo actualizado')
+            } else {
+                await api.post('/articulos', {
+                    nombre: nombre.trim(),
+                    categoria_id: catId,
+                    stock_actual: Number(stockInicial),
+                    stock_minimo: Number(stockMinimo),
+                })
+
+                notificar('Artículo creado')
+            }
+
+            await recargar()
+            onCerrar()
+        } catch (e) {
+            setError(e.message)
+        } finally {
+            setGuardando(false)
+        }
     }
 
-    function eliminar() {
-        const ok = window.confirm(`¿Eliminar "${articulo.nombre}"? Esta acción no se puede deshacer.`)
-        if (!ok) return
-        setArticulos((prev) => prev.filter((a) => a.id !== articulo.id))
-        onCerrar()
+    async function eliminar() {
+        const confirmado = window.confirm(
+            `¿Dar de baja "${articulo.nombre}"? El artículo quedará inactivo y se desasignará de los modelos compatibles.`
+        )
+
+        if (!confirmado) return
+
+        setGuardando(true)
+        setError('')
+
+        try {
+            await api.delete(`/articulos/${articulo.id}`)
+            notificar('Artículo dado de baja')
+            await recargar()
+            onCerrar()
+        } catch (e) {
+            setError(e.message)
+        } finally {
+            setGuardando(false)
+        }
     }
 
     return (
-        <Dialog open={abierto} onClose={onCerrar}>
+        <Dialog open={abierto} onClose={guardando ? undefined : onCerrar}>
             <DialogTitle>{editando ? 'Editar artículo' : 'Nuevo artículo'}</DialogTitle>
             <DialogContent>
                 <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1, minWidth: 320 }}>
@@ -89,7 +114,7 @@ function ArticuloDialog({ abierto, onCerrar, categorias, articulo, categoriaIdFi
                             options={categorias}
                             getOptionLabel={(c) => c.nombre}
                             value={categorias.find((c) => c.id === Number(categoriaId)) || null}
-                            onChange={(e, nueva) => setCategoriaId(nueva ? nueva.id : '')}
+                            onChange={(e, nueva) => { setCategoriaId(nueva ? nueva.id : ''); setError('') }}
                             renderInput={(params) => <TextField {...params} label="Categoría" />}
                         />
                     )}
@@ -113,6 +138,7 @@ function ArticuloDialog({ abierto, onCerrar, categorias, articulo, categoriaIdFi
                                 const v = Number(e.target.value)
                                 setStockInicial(v < 0 ? 0 : v)
                             }}
+                            helperText="Si es mayor a 0, se registra una entrada automática en el historial."
                         />
                     )}
 
@@ -133,14 +159,18 @@ function ArticuloDialog({ abierto, onCerrar, categorias, articulo, categoriaIdFi
                 </Box>
             </DialogContent>
             <DialogActions sx={{ justifyContent: 'space-between' }}>
-                {editando ? (
-                    <Button color="error" onClick={eliminar}>Eliminar</Button>
+                {editando && articulo.activo ? (
+                    <Button color="error" onClick={eliminar} disabled={guardando}>
+                        Dar de baja
+                    </Button>
                 ) : (
                     <span />
                 )}
                 <Box>
-                    <Button onClick={onCerrar}>Cancelar</Button>
-                    <Button variant="contained" onClick={guardar}>Guardar</Button>
+                    <Button onClick={onCerrar} disabled={guardando}>Cancelar</Button>
+                    <Button variant="contained" onClick={guardar} disabled={guardando}>
+                        {guardando ? 'Guardando...' : 'Guardar'}
+                    </Button>
                 </Box>
             </DialogActions>
         </Dialog>

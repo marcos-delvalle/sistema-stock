@@ -6,7 +6,7 @@ import { Edit } from '@mui/icons-material'
 import { useState } from 'react'
 import ArticuloDialog from '../components/ArticuloDialog'
 
-function Articulos({ articulos, setArticulos, categorias }) {
+function Articulos({ articulos, categorias }) {
 
     const [articuloEditando, setArticuloEditando] = useState(null)
     const [dialogoAbierto, setDialogoAbierto] = useState(false)
@@ -80,7 +80,6 @@ function Articulos({ articulos, setArticulos, categorias }) {
                 onCerrar={() => setDialogoAbierto(false)}
                 categorias={categorias}
                 articulo={articuloEditando}
-                setArticulos={setArticulos}
             />
 
             <TableContainer component={Paper}>

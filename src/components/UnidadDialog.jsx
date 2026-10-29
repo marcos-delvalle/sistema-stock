@@ -3,6 +3,8 @@ import {
     DialogTitle, MenuItem, TextField,
 } from '@mui/material'
 import { useState } from 'react'
+import { api } from '../api/client'
+import { useDatos } from '../context/DatosContext'
 
 /**
  * Formulario para crear o editar una unidad (impresora física).
@@ -14,10 +16,9 @@ import { useState } from 'react'
  * - `oficinaIdInicial`: precarga la oficina (se usa al agregar desde una oficina)
  */
 function UnidadDialog({
-    abierto, onCerrar, modelo, unidad, oficinas, setUnidades,
-    modelos, oficinaIdInicial,
+    abierto, onCerrar, modelo, unidad, oficinas, modelos, oficinaIdInicial,
 }) {
-
+    const { recargar, notificar } = useDatos()
     const editando = Boolean(unidad)
 
     const [modeloId, setModeloId] = useState(unidad?.modelo_id ?? modelo?.id ?? '')
@@ -26,6 +27,7 @@ function UnidadDialog({
     const [ip, setIp] = useState(unidad?.ip || '')
     const [estado, setEstado] = useState(unidad?.estado || 'activa')
     const [error, setError] = useState('')
+    const [guardando, setGuardando] = useState(false)
 
     // Si nos pasan la lista de modelos, el modelo se elige dentro del diálogo.
     // Si no, queda fijo al modelo desde el que se abrió (caso Impresoras).
@@ -33,41 +35,43 @@ function UnidadDialog({
         ? modelos.find((m) => m.id === Number(modeloId))
         : modelo
 
-    function guardar() {
+    async function guardar() {
         if (!nombre.trim() || !oficinaId || !modeloSeleccionado) {
             setError('Completá el modelo, el nombre y la oficina.')
             return
         }
 
-        if (editando) {
-            setUnidades((prev) => prev.map((u) => (
-                u.id === unidad.id
-                    ? {
-                        ...u,
-                        modelo_id: modeloSeleccionado.id,
-                        nombre: nombre.trim(),
-                        oficina_id: Number(oficinaId),
-                        ip: ip.trim(),
-                        estado,
-                    }
-                    : u
-            )))
-        } else {
-            setUnidades((prev) => [...prev, {
-                id: Date.now(),
+        setGuardando(true)
+        setError('')
+
+        try {
+            const cuerpo = {
                 modelo_id: modeloSeleccionado.id,
                 nombre: nombre.trim(),
                 oficina_id: Number(oficinaId),
                 ip: ip.trim(),
                 estado,
-            }])
-        }
+            }
 
-        onCerrar()
+            if (editando) {
+                await api.put(`/unidades/${unidad.id}`, cuerpo)
+                notificar('Unidad actualizada')
+            } else {
+                await api.post('/unidades', cuerpo)
+                notificar('Unidad creada')
+            }
+
+            await recargar()
+            onCerrar()
+        } catch (e) {
+            setError(e.message)
+        } finally {
+            setGuardando(false)
+        }
     }
 
     return (
-        <Dialog open={abierto} onClose={onCerrar} maxWidth="xs" fullWidth>
+        <Dialog open={abierto} onClose={guardando ? undefined : onCerrar} maxWidth="xs" fullWidth>
             <DialogTitle>
                 {editando ? 'Editar unidad' : 'Nueva unidad'}
                 {modeloSeleccionado ? ` · ${modeloSeleccionado.marca} ${modeloSeleccionado.modelo}` : ''}
@@ -126,8 +130,10 @@ function UnidadDialog({
                 </Box>
             </DialogContent>
             <DialogActions>
-                <Button onClick={onCerrar}>Cancelar</Button>
-                <Button variant="contained" onClick={guardar}>Guardar</Button>
+                <Button onClick={onCerrar} disabled={guardando}>Cancelar</Button>
+                <Button variant="contained" onClick={guardar} disabled={guardando}>
+                    {guardando ? 'Guardando...' : 'Guardar'}
+                </Button>
             </DialogActions>
         </Dialog>
     )

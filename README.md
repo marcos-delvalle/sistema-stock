@@ -8,10 +8,10 @@ artículos varios, dependencias (edificios), oficinas e historial de movimientos
 - **Base de datos:** PostgreSQL 16/17
 - **Autenticación:** un único usuario administrador con cookie `httpOnly`
 
-> **Estado actual:** el backend está completo y probado, pero la interfaz React
-> **todavía usa datos de demostración (mock)**. La pantalla de login y la
-> conexión del front con la API son la próxima fase. Hasta terminarla, no cargues
-> stock real desde la interfaz: esos cambios no se guardan en PostgreSQL.
+> **Estado actual:** frontend y backend integrados. La interfaz ya tiene login,
+> carga los datos desde la API y guarda los cambios en PostgreSQL. Falta la
+> puesta en producción (servicio de Windows, firewall, IP fija y respaldos) y
+> algunas mejoras opcionales.
 
 ---
 
@@ -288,6 +288,9 @@ Eso arranca:
 - La API Express en <http://localhost:3000>.
 - Vite en <http://localhost:5173>.
 
+Abrí <http://localhost:5173> e ingresá con el usuario y la contraseña definidos
+en `server/.env` (`ADMIN_USER` y `ADMIN_PASSWORD`).
+
 También se puede separar en dos terminales:
 
 ```powershell
@@ -315,8 +318,9 @@ Respuesta esperada:
 Si `ok` es `false`, la API está viva pero no puede conectarse a PostgreSQL:
 revisar que la base esté corriendo y que `DATABASE_URL` sea correcta.
 
-> Recordatorio: en desarrollo, la interfaz todavía muestra datos mock. Para
-> probar el backend hay que usar la API (ver [API](#13-api)).
+La interfaz ya consume esta API. Si no ves datos, revisá `/api/salud`, la sesión
+y la consola del servidor. Para probar endpoints sueltos podés usar la API
+directamente (ver [API](#13-api)).
 
 ---
 
@@ -403,9 +407,8 @@ http://192.168.0.50:3000
 
 ## 10. Uso del sistema
 
-> La interfaz actual es una demo funcional con datos mock. Los flujos de abajo
-> describen cómo está pensada la aplicación y cómo funcionará cuando el front
-> esté conectado a la API. El backend ya implementa todas las reglas.
+La interfaz ya está conectada a la API. Los flujos de abajo son los que podés
+usar desde el navegador; todos los cambios se guardan en PostgreSQL.
 
 ### 10.1 Ingreso
 
@@ -414,8 +417,9 @@ El login es único:
 - Usuario: `admin`
 - Contraseña: la definida en `ADMIN_PASSWORD` dentro de `server/.env`.
 
-Hoy el login existe en la API (`POST /api/auth/login`), pero **la pantalla de
-login de React todavía no está implementada**. Es parte de la próxima fase.
+La pantalla de login ya está implementada. Al entrar, el front verifica la
+sesión con `GET /api/auth/me`. Si la cookie expira o la API reinicia, volvés a la
+pantalla de login.
 
 ### 10.2 Dashboard
 
@@ -796,7 +800,7 @@ npm start
 | Desde otra PC no abre | Firewall, IP o red pública | Abrir el puerto 3000 en red privada; probar `/api/salud`. |
 | `npm run dev:all` falla al arrancar la base | Servicio en otro puerto o sin PostgreSQL | Usar `npm run server` + `npm run dev`, o ajustar la conexión. |
 | La consola muestra caracteres raros | Codificación de PowerShell | No afecta el funcionamiento; se puede ajustar la fuente/encoding. |
-| El stock del dashboard no coincide | El front sigue usando datos mock | Es la limitación actual; se resuelve al integrar la API. |
+| La interfaz muestra un error de conexión | La API está caída o la sesión expiró | Revisar `npm run server` y `/api/salud`; volver a iniciar sesión. |
 
 ---
 
@@ -804,33 +808,26 @@ npm start
 
 ### Completado
 
-- [x] Interfaz React con todos los módulos (datos mock).
+- [x] Interfaz React con todos los módulos.
 - [x] Servidor Express + PostgreSQL.
 - [x] Esquema de 7 tablas, índices y restricciones.
 - [x] API CRUD completa.
 - [x] Validaciones y transacciones de stock con `FOR UPDATE`.
 - [x] Login único de administrador con cookie `httpOnly`.
+- [x] Cliente API, pantalla de login y verificación de sesión.
+- [x] Carga de datos desde la API y Snackbar global.
+- [x] Diálogos de alta/edición guardando contra la API.
 - [x] Servido del front compilado en producción.
 - [x] Scripts de PostgreSQL portable y documentación.
 
-### Próxima fase: conectar el front
+### Próximas mejoras
 
-1. Crear `src/api/client.js` con `fetch`, manejo de errores y credenciales.
-2. Pantalla de login y verificación de sesión con `GET /api/auth/me`.
-3. Reemplazar `src/data/mockData.js` por datos de la API al iniciar.
-4. Migrar cada diálogo (artículos, movimientos, impresoras, dependencias,
-   oficinas, tóners) a las llamadas `POST/PUT/PATCH/DELETE`.
-5. Agregar Snackbar global para errores y confirmaciones.
-6. Estados de carga y vacío.
-7. Probar el flujo completo: alta de artículo → entrada → salida → historial.
-
-### Después
-
-- Endpoint de resumen del dashboard (opcional; hoy se puede calcular en el front).
-- Paginación y filtros avanzados del historial.
-- Pruebas automatizadas de API.
-- PostgreSQL como servicio de Windows, respaldos programados.
-- HTTPS opcional y rate limiting si se expone fuera de la LAN.
+1. Endpoint de resumen del dashboard (opcional; hoy se calcula en el front).
+2. Paginación y filtros avanzados del historial.
+3. Pruebas automatizadas del frontend y ampliación de las de API.
+4. PostgreSQL como servicio de Windows, firewall, IP fija y respaldos programados.
+5. HTTPS opcional y rate limiting si se expone fuera de la LAN.
+6. Code splitting para reducir el tamaño del bundle de Material UI (opcional).
 
 ---
 
@@ -872,10 +869,13 @@ Sugerencias de mensajes:
 
 | Archivo | Qué contiene |
 |---|---|
-| `src/App.jsx` | Rutas, layout y estado global (hoy con mock). |
+| `src/App.jsx` | Rutas, layout, login, logout y estados de carga. |
+| `src/api/client.js` | Cliente `fetch` para `/api`, cookies y errores. |
+| `src/context/AuthContext.jsx` | Sesión, login y logout. |
+| `src/context/DatosContext.jsx` | Carga y recarga de todos los datos. |
+| `src/pages/Login.jsx` | Pantalla de ingreso. |
 | `src/pages/` | Dashboard, Tóners, Impresoras, Artículos, Dependencias, Historial. |
 | `src/components/` | Diálogos de alta/edición y detalle de oficina. |
-| `src/data/mockData.js` | Datos de demostración (se reemplazan en la integración). |
 | `server/index.js` | Arranque en `0.0.0.0` y apagado ordenado. |
 | `server/app.js` | Middlewares, rutas y servido de `dist/`. |
 | `server/db/esquema.sql` | Tablas, CHECKs, FKs, índices y categorías base. |
@@ -902,6 +902,7 @@ Sugerencias de mensajes:
 8. `npm run build` y `npm start`.
 9. Abrir el puerto 3000 en el firewall (red privada) y reservar la IP.
 10. Probar `http://IP:3000/api/salud` desde otra PC.
+11. Entrar a `http://IP:3000` e iniciar sesión con `ADMIN_USER` y `ADMIN_PASSWORD`.
 
-Y recordar: **hasta que se integre el front, la interfaz sigue mostrando datos
-mock**. El backend ya está listo para recibir los datos reales.
+La interfaz ya guarda los cambios en PostgreSQL. Antes de cargar datos reales,
+configurá los respaldos y cambiá la contraseña de administrador.

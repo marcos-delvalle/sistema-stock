@@ -19,8 +19,7 @@ function normalizar(texto) {
 }
 
 function Dependencias({
-    dependencias, setDependencias, oficinas, setOficinas,
-    unidades, setUnidades, modelos, movimientos, articulos,
+    dependencias, oficinas, unidades, modelos, movimientos, articulos,
 }) {
 
     // undefined = cerrado · null = creando · objeto = editando
@@ -31,13 +30,16 @@ function Dependencias({
     const [busqueda, setBusqueda] = useState('')
     const [expandidas, setExpandidas] = useState({})
 
+    const dependenciasActivas = dependencias.filter((d) => d.activo)
+    const oficinasActivas = oficinas.filter((o) => o.activo)
+
     const termino = normalizar(busqueda)
 
     // Si el término coincide con la dependencia, se muestran todas sus oficinas.
     // Si coincide solo con una oficina, se muestra esa oficina dentro de su dependencia.
-    const resultados = dependencias
+    const resultados = dependenciasActivas
         .map((dep) => {
-            const todas = oficinas
+            const todas = oficinasActivas
                 .filter((o) => o.dependencia_id === dep.id)
                 .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'))
 
@@ -79,7 +81,7 @@ function Dependencias({
                 </Button>
             </Box>
 
-            {dependencias.length > 0 && (
+            {dependenciasActivas.length > 0 && (
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap', mb: 2 }}>
                     <TextField
                         size="small"
@@ -118,7 +120,7 @@ function Dependencias({
                 </Box>
             )}
 
-            {dependencias.length === 0 && (
+            {dependenciasActivas.length === 0 && (
                 <Typography color="text.secondary" sx={{ py: 4 }}>
                     Todavía no hay dependencias cargadas.
                 </Typography>
@@ -274,8 +276,7 @@ function Dependencias({
                     abierto
                     onCerrar={() => setDepEditando(undefined)}
                     dependencia={depEditando}
-                    oficinas={oficinas}
-                    setDependencias={setDependencias}
+                    oficinas={oficinasActivas}
                     onAgregarOficina={depEditando ? () => abrirNuevaOficina(depEditando.id) : undefined}
                 />
             )}
@@ -286,9 +287,8 @@ function Dependencias({
                     onCerrar={() => setOficinaEditando(undefined)}
                     oficina={oficinaEditando}
                     dependenciaId={oficinaEditando?.dependencia_id ?? depParaOficina}
-                    dependencias={dependencias}
+                    dependencias={dependenciasActivas}
                     unidades={unidades}
-                    setOficinas={setOficinas}
                 />
             )}
 
@@ -297,11 +297,10 @@ function Dependencias({
                     abierto
                     onCerrar={() => setOficinaDetalle(null)}
                     oficina={oficinaDetalle}
-                    dependencia={dependencias.find((d) => d.id === oficinaDetalle.dependencia_id)}
+                    dependencia={dependenciasActivas.find((d) => d.id === oficinaDetalle.dependencia_id)}
                     unidades={unidades}
                     modelos={modelos}
-                    setUnidades={setUnidades}
-                    oficinas={oficinas}
+                    oficinas={oficinasActivas}
                     articulos={articulos}
                     movimientos={movimientos}
                 />

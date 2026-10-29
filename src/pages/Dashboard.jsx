@@ -164,9 +164,12 @@ function Dashboard({
         .sort((a, b) => String(b.fecha).localeCompare(String(a.fecha)) || b.id - a.id)
         .slice(0, 6)
 
-    const porDependencia = dependencias
+    const dependenciasActivas = dependencias.filter((d) => d.activo)
+    const oficinasActivas = oficinas.filter((o) => o.activo)
+
+    const porDependencia = dependenciasActivas
         .map((dep) => {
-            const idsOficinas = oficinas
+            const idsOficinas = oficinasActivas
                 .filter((o) => o.dependencia_id === dep.id)
                 .map((o) => o.id)
 
@@ -188,7 +191,7 @@ function Dashboard({
 
     function destinoDe(m) {
         if (m.tipo === 'entrada') return 'Depósito'
-        return oficinas.find((o) => o.id === m.oficina_id)?.nombre || '—'
+        return m.oficina_nombre || oficinas.find((o) => o.id === m.oficina_id)?.nombre || '—'
     }
 
     const detalleArticulos = inactivos > 0
@@ -447,7 +450,7 @@ function Dashboard({
                                         >
                                             <TableCell>{formatearFecha(m.fecha)}</TableCell>
                                             <TableCell>
-                                                {articulos.find((a) => a.id === m.articulo_id)?.nombre || '—'}
+                                                {m.articulo_nombre || articulos.find((a) => a.id === m.articulo_id)?.nombre || '—'}
                                             </TableCell>
                                             <TableCell>
                                                 <Chip

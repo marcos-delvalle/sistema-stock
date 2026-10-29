@@ -6,7 +6,7 @@ import { Edit, Print } from '@mui/icons-material'
 import { useState } from 'react'
 import TonerDialog from '../components/TonerDialog'
 
-function Toners({ articulos, modelos, unidades, categorias, setArticulos, setModelos }) {
+function Toners({ articulos, modelos, unidades, categorias }) {
 
     const [tonerEditando, setTonerEditando] = useState(null)
     const [dialogoAbierto, setDialogoAbierto] = useState(false)
@@ -43,8 +43,6 @@ function Toners({ articulos, modelos, unidades, categorias, setArticulos, setMod
                 categoriaId={catToner?.id}
                 articulos={articulos}
                 modelos={modelos}
-                setArticulos={setArticulos}
-                setModelos={setModelos}
             />
 
             <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, alignItems: 'stretch' }}>

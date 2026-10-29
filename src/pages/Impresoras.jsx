@@ -7,7 +7,7 @@ import { useState } from 'react'
 import OficinasAsignadasDialog from '../components/OficinasAsignadasDialog'
 import CrearImpresoraDialog from '../components/CrearImpresoraDialog'
 
-function Impresoras({ modelos, unidades, oficinas, articulos, categorias, setModelos, setUnidades }) {
+function Impresoras({ modelos, unidades, oficinas, articulos, categorias }) {
 
     const [dialogoCrear, setDialogoCrear] = useState(false)
     const [modeloSeleccionado, setModeloSeleccionado] = useState(null)
@@ -79,7 +79,6 @@ function Impresoras({ modelos, unidades, oficinas, articulos, categorias, setMod
                 abierto={dialogoCrear}
                 onCerrar={() => setDialogoCrear(false)}
                 modelos={modelos}
-                setModelos={setModelos}
                 articulos={articulos}
                 categorias={categorias}
             />
@@ -140,8 +139,7 @@ function Impresoras({ modelos, unidades, oficinas, articulos, categorias, setMod
                 onCerrar={() => setDialogoVer(false)}
                 modelo={modeloSeleccionado}
                 unidades={unidades}
-                oficinas={oficinas}
-                setUnidades={setUnidades}
+                oficinas={oficinas.filter((o) => o.activo)}
             />
         </>
     )

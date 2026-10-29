@@ -3,6 +3,8 @@ import {
     DialogTitle, Divider, FormControlLabel, Switch, TextField, Typography,
 } from '@mui/material'
 import { useState } from 'react'
+import { api } from '../api/client'
+import { useDatos } from '../context/DatosContext'
 
 /**
  * Diálogo de tóner: Nombre, stock mínimo y modelos de impresora compatibles.
@@ -13,8 +15,8 @@ import { useState } from 'react'
  */
 function TonerDialog({
     abierto, onCerrar, toner, categoriaId, articulos, modelos,
-    setArticulos, setModelos,
 }) {
+    const { recargar, notificar } = useDatos()
     const editando = Boolean(toner)
 
     const [nombre, setNombre] = useState(toner?.nombre || '')
@@ -25,61 +27,91 @@ function TonerDialog({
         editando ? modelos.filter((m) => m.articulo_id === toner.id).map((m) => m.id) : []
     )
     const [error, setError] = useState('')
+    const [guardando, setGuardando] = useState(false)
 
-    function guardar() {
+    async function guardar() {
         if (!nombre.trim()) {
             setError('El nombre es obligatorio')
             return
         }
 
-        const idFinal = editando ? toner.id : Date.now()
-        const datos = {
-            nombre: nombre.trim(),
-            categoria_id: categoriaId,
-            stock_minimo: Number(stockMinimo),
-            activo,
+        if (!categoriaId) {
+            setError('No se encontró la categoría Tóner. Recargá la página.')
+            return
         }
 
-        if (editando) {
-            setArticulos((prev) => prev.map((a) => (
-                a.id === toner.id ? { ...a, ...datos } : a
-            )))
-        } else {
-            setArticulos((prev) => [...prev, {
-                id: idFinal,
-                ...datos,
-                stock_actual: Number(stockInicial),
-            }])
-        }
+        setGuardando(true)
+        setError('')
 
-        // Aplicamos las compatibilidades sobre los modelos
-        setModelos((prev) => prev.map((m) => {
-            const marcado = seleccionados.includes(m.id)
+        try {
+            let idFinal = toner?.id
 
-            if (marcado) {
-                return m.articulo_id === idFinal ? m : { ...m, articulo_id: idFinal }
+            if (editando) {
+                await api.put(`/articulos/${idFinal}`, {
+                    nombre: nombre.trim(),
+                    categoria_id: categoriaId,
+                    stock_minimo: Number(stockMinimo),
+                })
+
+                if (activo !== toner.activo) {
+                    await api.patch(`/articulos/${idFinal}/activo`, { activo })
+                }
+            } else {
+                const creado = await api.post('/articulos', {
+                    nombre: nombre.trim(),
+                    categoria_id: categoriaId,
+                    stock_actual: Number(stockInicial),
+                    stock_minimo: Number(stockMinimo),
+                })
+
+                idFinal = creado.id
             }
-            return m.articulo_id === idFinal ? { ...m, articulo_id: null } : m
-        }))
 
-        onCerrar()
+            const cambios = modelos.filter((m) => {
+                const marcado = seleccionados.includes(m.id)
+                const eraDeEsteToner = m.articulo_id === idFinal
+
+                return (marcado && !eraDeEsteToner) || (!marcado && eraDeEsteToner)
+            })
+
+            await Promise.all(cambios.map((m) => api.put(`/modelos/${m.id}/compatibilidad`, {
+                articulo_id: seleccionados.includes(m.id) ? idFinal : null,
+            })))
+
+            notificar(editando ? 'Tóner actualizado' : 'Tóner creado')
+            await recargar()
+            onCerrar()
+        } catch (e) {
+            setError(e.message)
+        } finally {
+            setGuardando(false)
+        }
     }
 
-    function eliminar() {
-        const ok = window.confirm(
-            `¿Eliminar "${toner.nombre}"? Las impresoras compatibles quedarán sin tóner asignado.`
+    async function eliminar() {
+        const confirmado = window.confirm(
+            `¿Dar de baja "${toner.nombre}"? Las impresoras compatibles quedarán sin tóner asignado.`
         )
-        if (!ok) return
 
-        setArticulos((prev) => prev.filter((a) => a.id !== toner.id))
-        setModelos((prev) => prev.map((m) => (
-            m.articulo_id === toner.id ? { ...m, articulo_id: null } : m
-        )))
-        onCerrar()
+        if (!confirmado) return
+
+        setGuardando(true)
+        setError('')
+
+        try {
+            await api.delete(`/articulos/${toner.id}`)
+            notificar('Tóner dado de baja')
+            await recargar()
+            onCerrar()
+        } catch (e) {
+            setError(e.message)
+        } finally {
+            setGuardando(false)
+        }
     }
 
     return (
-        <Dialog open={abierto} onClose={onCerrar} maxWidth="sm" fullWidth>
+        <Dialog open={abierto} onClose={guardando ? undefined : onCerrar} maxWidth="sm" fullWidth>
             <DialogTitle>{editando ? 'Editar tóner' : 'Nuevo tóner'}</DialogTitle>
 
             <DialogContent>
@@ -175,14 +207,18 @@ function TonerDialog({
             </DialogContent>
 
             <DialogActions sx={{ justifyContent: 'space-between' }}>
-                {editando ? (
-                    <Button color="error" onClick={eliminar}>Eliminar</Button>
+                {editando && toner.activo ? (
+                    <Button color="error" onClick={eliminar} disabled={guardando}>
+                        Dar de baja
+                    </Button>
                 ) : (
                     <span />
                 )}
                 <Box>
-                    <Button onClick={onCerrar}>Cancelar</Button>
-                    <Button variant="contained" onClick={guardar}>Guardar</Button>
+                    <Button onClick={onCerrar} disabled={guardando}>Cancelar</Button>
+                    <Button variant="contained" onClick={guardar} disabled={guardando}>
+                        {guardando ? 'Guardando...' : 'Guardar'}
+                    </Button>
                 </Box>
             </DialogActions>
         </Dialog>

@@ -7,7 +7,7 @@ import { Edit, OpenInNew } from '@mui/icons-material'
 import { useState } from 'react'
 import UnidadDialog from './UnidadDialog'
 
-function OficinasAsignadasDialog({ abierto, onCerrar, unidades, modelo, oficinas, setUnidades }) {
+function OficinasAsignadasDialog({ abierto, onCerrar, unidades, modelo, oficinas }) {
 
     // undefined = formulario cerrado · null = creando · objeto = editando
     const [unidadEditando, setUnidadEditando] = useState(undefined)
@@ -110,7 +110,6 @@ function OficinasAsignadasDialog({ abierto, onCerrar, unidades, modelo, oficinas
                     modelo={modelo}
                     unidad={unidadEditando}
                     oficinas={oficinas}
-                    setUnidades={setUnidades}
                 />
             )}
         </>

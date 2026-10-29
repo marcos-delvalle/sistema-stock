@@ -3,17 +3,22 @@ import {
     DialogTitle, MenuItem, TextField, Typography,
 } from '@mui/material'
 import { useState } from 'react'
+import { api } from '../api/client'
+import { useDatos } from '../context/DatosContext'
 
-function NuevoMovimientoDialog({ abierto, onCerrar, articulos, setArticulos, setMovimientos, oficinas }) {
+function NuevoMovimientoDialog({ abierto, onCerrar, articulos, oficinas }) {
+    const { recargar, notificar } = useDatos()
+
     const [articuloId, setArticuloId] = useState('')
     const [tipo, setTipo] = useState('salida')
     const [cantidad, setCantidad] = useState(1)
     const [oficinaId, setOficinaId] = useState('')
     const [error, setError] = useState('')
+    const [guardando, setGuardando] = useState(false)
 
     const articulo = articulos.find((a) => a.id === Number(articuloId))
 
-    function registrar() {
+    async function registrar() {
         const cant = Number(cantidad)
 
         if (!articulo) {
@@ -36,29 +41,29 @@ function NuevoMovimientoDialog({ abierto, onCerrar, articulos, setArticulos, set
             return
         }
 
-        const nuevoStock = tipo === 'entrada'
-            ? articulo.stock_actual + cant
-            : articulo.stock_actual - cant
+        setGuardando(true)
+        setError('')
 
-        setArticulos((prev) => prev.map((a) => (
-            a.id === articulo.id ? { ...a, stock_actual: nuevoStock } : a
-        )))
+        try {
+            await api.post('/movimientos', {
+                articulo_id: articulo.id,
+                tipo,
+                cantidad: cant,
+                oficina_id: tipo === 'salida' ? Number(oficinaId) : null,
+            })
 
-        setMovimientos((prev) => [...prev, {
-            id: Date.now(),
-            articulo_id: articulo.id,
-            tipo,
-            cantidad: cant,
-            // Una entrada va al depósito, no a una oficina
-            oficina_id: tipo === 'salida' ? Number(oficinaId) : null,
-            fecha: new Date().toISOString().slice(0, 10),
-        }])
-
-        onCerrar()
+            notificar(tipo === 'entrada' ? 'Entrada registrada' : 'Salida registrada')
+            await recargar()
+            onCerrar()
+        } catch (e) {
+            setError(e.message)
+        } finally {
+            setGuardando(false)
+        }
     }
 
     return (
-        <Dialog open={abierto} onClose={onCerrar} maxWidth="xs" fullWidth>
+        <Dialog open={abierto} onClose={guardando ? undefined : onCerrar} maxWidth="xs" fullWidth>
             <DialogTitle>Nuevo movimiento</DialogTitle>
             <DialogContent>
                 <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
@@ -115,8 +120,10 @@ function NuevoMovimientoDialog({ abierto, onCerrar, articulos, setArticulos, set
                 </Box>
             </DialogContent>
             <DialogActions>
-                <Button onClick={onCerrar}>Cancelar</Button>
-                <Button variant="contained" onClick={registrar}>Registrar</Button>
+                <Button onClick={onCerrar} disabled={guardando}>Cancelar</Button>
+                <Button variant="contained" onClick={registrar} disabled={guardando}>
+                    {guardando ? 'Registrando...' : 'Registrar'}
+                </Button>
             </DialogActions>
         </Dialog>
     )
