@@ -46,7 +46,7 @@ artículos varios, dependencias (edificios), oficinas e historial de movimientos
 | **Dashboard** | KPIs de stock, artículos bajo mínimo, actividad de los últimos 6 meses, alertas, últimos movimientos y distribución por dependencia. |
 | **Tóners** | Stock de tóners, compatibilidad con modelos de impresora, edición y baja. |
 | **Impresoras** | Modelos de impresora y unidades físicas asignadas a oficinas, con IP y estado. |
-| **Artículos** | Artículos del depósito (periféricos, cables, etc.), stock, stock mínimo y estado activo/inactivo. |
+| **Artículos** | Artículos del depósito (periféricos, cables, etc.), stock, stock mínimo, estado activo/inactivo y gestión de categorías. |
 | **Dependencias** | Edificios o dependencias, con sus oficinas. Al expandir una oficina se ven sus impresoras y el historial de salidas. |
 | **Historial** | Entradas y salidas de stock, con fecha, artículo, cantidad y oficina de destino. |
 | **Nuevo movimiento** | Botón `+` para registrar una entrada al depósito o una salida a una oficina. |
@@ -348,6 +348,83 @@ npm start
 Si `dist/` no existe, el servidor avisa y la API funciona, pero el front no se
 sirve. En ese caso ejecutar `npm run build`.
 
+### 8.1 Arranque automático como servicio de Windows (NSSM)
+
+`npm start` sirve para probar, pero si se cierra la sesión o se reinicia la PC,
+el sistema se detiene. Para que arranque solo al prender la PC y se recupere si
+se cae, se instala como servicio con **NSSM**.
+
+**Requisitos:** permisos de administrador (la ventana de UAC), Node.js instalado
+para todos los usuarios y el proyecto en una carpeta simple, por ejemplo
+`C:\gestion-stock`. Evitá clonarlo dentro del perfil de un usuario
+(`C:\Users\...`): el servicio corre como `LocalSystem` y puede no tener permisos.
+
+1. Descargar NSSM desde <https://nssm.cc/download>, descomprimir y copiar
+   `win64\nssm.exe` a `C:\Program Files\nssm\nssm.exe`. Hacerlo desde una
+   PowerShell **como administrador**:
+
+   ```powershell
+   New-Item -ItemType Directory -Force 'C:\Program Files\nssm' | Out-Null
+   Copy-Item 'C:\ruta\donde\descomprimiste\nssm.exe' 'C:\Program Files\nssm\nssm.exe'
+   ```
+
+2. Compilar el front y crear la carpeta de logs:
+
+   ```powershell
+   cd C:\gestion-stock
+   npm install
+   npm run build
+   New-Item -ItemType Directory -Force .\logs | Out-Null
+   ```
+
+3. Registrar el servicio (PowerShell **como administrador**):
+
+   ```powershell
+   $proyecto = 'C:\gestion-stock'
+   $node = (Get-Command node).Source
+   $nssm = 'C:\Program Files\nssm\nssm.exe'
+
+   & $nssm install GestionStock $node "$proyecto\server\index.js"
+   & $nssm set GestionStock AppDirectory $proyecto
+   & $nssm set GestionStock AppEnvironmentExtra NODE_ENV=production
+   & $nssm set GestionStock Start SERVICE_AUTO_START
+   & $nssm set GestionStock AppExit Default Restart
+   & $nssm set GestionStock AppStdout "$proyecto\logs\api.log"
+   & $nssm set GestionStock AppStderr "$proyecto\logs\api.err.log"
+   & $nssm set GestionStock AppRotateFiles 1
+   & $nssm start GestionStock
+   ```
+
+   `AppEnvironmentExtra NODE_ENV=production` es importante: sin eso Express no
+   sirve `dist/`.
+
+4. Verificar:
+
+   ```powershell
+   Get-Service GestionStock
+   curl.exe http://localhost:3000/api/salud
+   ```
+
+5. Si el servicio no arranca, revisar `logs\api.err.log` y probar el comando a
+   mano para ver el error:
+
+   ```powershell
+   cd C:\gestion-stock
+   $env:NODE_ENV = 'production'
+   node server/index.js
+   ```
+
+6. Para desinstalarlo:
+
+   ```powershell
+   & 'C:\Program Files\nssm\nssm.exe' stop GestionStock
+   & 'C:\Program Files\nssm\nssm.exe' remove GestionStock confirm
+   ```
+
+> El servicio queda configurado con inicio automático y reinicio ante fallos.
+> Si se cambia la carpeta del proyecto, hay que actualizar `AppDirectory` y los
+> paths de los logs.
+
 ---
 
 ## 9. Acceso desde la red local
@@ -451,7 +528,9 @@ Una unidad siempre pertenece a un modelo y a una oficina.
 
 ### 10.5 Artículos
 
-- Categorías: Tóner, Periféricos, Cable (se pueden crear más por API).
+- Categorías: Tóner, Periféricos, Cable. El botón **Categorías** permite crear,
+  renombrar y eliminar categorías sin tocar la base de datos a mano.
+- Una categoría con artículos asociados no se puede eliminar.
 - Stock actual, stock mínimo y estado activo/inactivo.
 - Búsqueda y ordenamiento.
 - Alta, edición y baja lógica.
@@ -717,8 +796,13 @@ La API escribe en la consola:
 ```
 
 Si se ejecuta con `npm start` en una ventana de PowerShell, esos mensajes quedan
-ahí. Para producción se puede redirigir la salida a un archivo, o usar un
-administrador de servicios (por ejemplo, NSSM o una tarea programada).
+ahí. Con el servicio NSSM, la salida se guarda en:
+
+- `logs\api.log`: mensajes normales y peticiones.
+- `logs\api.err.log`: errores.
+
+Esos archivos están ignorados por Git. Revisar `api.err.log` es el primer paso
+cuando el servicio no arranca.
 
 ### 14.4 Respaldos
 
@@ -742,19 +826,48 @@ pg_restore -h localhost -U stock_app -d gestion_stock --clean --if-exists gestio
 
 ### 14.5 Actualizar el sistema
 
-En la PC servidor:
+En la PC servidor, desde la carpeta del proyecto y con tu usuario normal:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\actualizar.ps1
+```
+
+No hace falta abrir toda la consola como administrador: el script hace `git pull`,
+`npm install` y `npm run build` con tu usuario, y si tiene que reiniciar el
+servicio abre la ventana de UAC para pedir permisos solo en ese paso.
+
+El script `actualizar.ps1` hace, en orden:
+
+1. `git pull --ff-only` (se detiene si hay cambios locales sin commitear).
+2. `npm install`.
+3. `npm run db:migrate`.
+4. `npm run build`.
+5. Reinicia el servicio `GestionStock` con NSSM.
+
+Opciones útiles:
+
+```powershell
+# Si el servicio tiene otro nombre
+.\actualizar.ps1 -NombreServicio OtroNombre
+
+# Para probar sin reiniciar el servicio (por ejemplo, en desarrollo)
+.\actualizar.ps1 -SinReiniciar
+```
+
+El flujo manual equivalente, si no se usa el script:
 
 ```powershell
 git pull origin main
-npm ci
+npm install
 npm run db:migrate
 npm run build
-npm start
+nssm restart GestionStock
 ```
 
 > `db:migrate` es seguro para las tablas actuales porque usa `IF NOT EXISTS`.
 > Si en el futuro se agregan columnas a tablas existentes, habrá que crear
 > migraciones incrementales; no alcanza con `CREATE TABLE IF NOT EXISTS`.
+> Mientras tanto, este comando no borra datos.
 
 ---
 
@@ -817,7 +930,9 @@ npm start
 - [x] Cliente API, pantalla de login y verificación de sesión.
 - [x] Carga de datos desde la API y Snackbar global.
 - [x] Diálogos de alta/edición guardando contra la API.
+- [x] Gestión de categorías desde la interfaz.
 - [x] Servido del front compilado en producción.
+- [x] Servicio de Windows con NSSM y script `actualizar.ps1`.
 - [x] Scripts de PostgreSQL portable y documentación.
 
 ### Próximas mejoras
@@ -825,7 +940,7 @@ npm start
 1. Endpoint de resumen del dashboard (opcional; hoy se calcula en el front).
 2. Paginación y filtros avanzados del historial.
 3. Pruebas automatizadas del frontend y ampliación de las de API.
-4. PostgreSQL como servicio de Windows, firewall, IP fija y respaldos programados.
+4. Puesta en producción en la PC del trabajo: firewall, IP fija y respaldos programados.
 5. HTTPS opcional y rate limiting si se expone fuera de la LAN.
 6. Code splitting para reducir el tamaño del bundle de Material UI (opcional).
 
@@ -875,7 +990,8 @@ Sugerencias de mensajes:
 | `src/context/DatosContext.jsx` | Carga y recarga de todos los datos. |
 | `src/pages/Login.jsx` | Pantalla de ingreso. |
 | `src/pages/` | Dashboard, Tóners, Impresoras, Artículos, Dependencias, Historial. |
-| `src/components/` | Diálogos de alta/edición y detalle de oficina. |
+| `src/components/` | Diálogos de alta/edición, categorías y detalle de oficina. |
+| `actualizar.ps1` | Actualización en producción: pull, install, migrate, build y reinicio del servicio. |
 | `server/index.js` | Arranque en `0.0.0.0` y apagado ordenado. |
 | `server/app.js` | Middlewares, rutas y servido de `dist/`. |
 | `server/db/esquema.sql` | Tablas, CHECKs, FKs, índices y categorías base. |
@@ -899,10 +1015,12 @@ Sugerencias de mensajes:
 5. Crear el rol `stock_app` y la base `gestion_stock`.
 6. `Copy-Item server/.env.example server/.env` y completar credenciales.
 7. `npm run db:migrate` y `npm run db:check`.
-8. `npm run build` y `npm start`.
-9. Abrir el puerto 3000 en el firewall (red privada) y reservar la IP.
-10. Probar `http://IP:3000/api/salud` desde otra PC.
-11. Entrar a `http://IP:3000` e iniciar sesión con `ADMIN_USER` y `ADMIN_PASSWORD`.
+8. `npm run build`.
+9. Instalar el servicio con NSSM y verificar `Get-Service GestionStock` (ver
+   [8.1](#81-arranque-automático-como-servicio-de-windows-nssm)).
+10. Abrir el puerto 3000 en el firewall (red privada) y reservar la IP.
+11. Probar `http://IP:3000/api/salud` desde otra PC.
+12. Entrar a `http://IP:3000` e iniciar sesión con `ADMIN_USER` y `ADMIN_PASSWORD`.
 
 La interfaz ya guarda los cambios en PostgreSQL. Antes de cargar datos reales,
 configurá los respaldos y cambiá la contraseña de administrador.
