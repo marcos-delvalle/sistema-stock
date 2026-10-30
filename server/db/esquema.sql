@@ -1,5 +1,5 @@
 -- ============================================================
--- Esquema de la base de datos de Gestión de Stock
+-- Esquema de la base de datos de Sistema Stock
 -- Ejecutar con: npm run db:migrate
 -- ============================================================
 

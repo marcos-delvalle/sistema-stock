@@ -1,5 +1,5 @@
 param(
-    [string]$NombreServicio = 'GestionStock',
+    [string]$NombreServicio = 'SistemaStock',
     [switch]$SinReiniciar
 )
 
@@ -21,7 +21,7 @@ function Ejecutar {
     }
 }
 
-Write-Host '== Actualizando Gestion Stock ==' -ForegroundColor Cyan
+Write-Host '== Actualizando Sistema Stock ==' -ForegroundColor Cyan
 
 $cambios = git status --porcelain
 

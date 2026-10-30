@@ -53,10 +53,10 @@ function Login() {
                         <LockOutlined />
                     </Avatar>
                     <Typography variant="h5" sx={{ fontWeight: 700 }}>
-                        Soporte Técnico
+                        Sistema Stock
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
-                        Gestión de stock
+                        Soporte Técnico
                     </Typography>
                 </Box>
 

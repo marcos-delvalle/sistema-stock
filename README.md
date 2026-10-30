@@ -1,4 +1,4 @@
-# Gestión de Stock — Soporte Técnico
+# Sistema Stock — Soporte Técnico
 
 Sistema de stock pensado para una oficina de soporte técnico: tóners, impresoras,
 artículos varios, dependencias (edificios), oficinas e historial de movimientos.
@@ -208,7 +208,7 @@ Ejecutar:
 
 ```sql
 CREATE ROLE stock_app LOGIN PASSWORD 'TU_CLAVE_DE_BASE';
-CREATE DATABASE gestion_stock OWNER stock_app;
+CREATE DATABASE sistema_stock OWNER stock_app;
 \q
 ```
 
@@ -219,7 +219,7 @@ CREATE DATABASE gestion_stock OWNER stock_app;
 Probar la conexión:
 
 ```powershell
-psql "postgresql://stock_app:TU_CLAVE_DE_BASE@localhost:5432/gestion_stock" -c "SELECT 1;"
+psql "postgresql://stock_app:TU_CLAVE_DE_BASE@localhost:5432/sistema_stock" -c "SELECT 1;"
 ```
 
 ### Crear las tablas
@@ -249,7 +249,7 @@ Completar:
 
 ```env
 PORT=3000
-DATABASE_URL=postgresql://stock_app:TU_CLAVE_DE_BASE@localhost:5432/gestion_stock
+DATABASE_URL=postgresql://stock_app:TU_CLAVE_DE_BASE@localhost:5432/sistema_stock
 ADMIN_USER=admin
 ADMIN_PASSWORD=ELEGI_UNA_CLAVE_LARGA_Y_UNICA
 JWT_SECRET=GENERA_UN_SECRETO_ALEATORIO
@@ -309,7 +309,7 @@ Respuesta esperada:
 ```json
 {
   "ok": true,
-  "servicio": "gestion-stock-api",
+  "servicio": "sistema-stock-api",
   "baseDeDatos": "conectada",
   "fecha": "2026-10-28T..."
 }
@@ -356,7 +356,7 @@ se cae, se instala como servicio con **NSSM**.
 
 **Requisitos:** permisos de administrador (la ventana de UAC), Node.js instalado
 para todos los usuarios y el proyecto en una carpeta simple, por ejemplo
-`C:\gestion-stock`. Evitá clonarlo dentro del perfil de un usuario
+`C:\sistema-stock`. Evitá clonarlo dentro del perfil de un usuario
 (`C:\Users\...`): el servicio corre como `LocalSystem` y puede no tener permisos.
 
 1. Descargar NSSM desde <https://nssm.cc/download>, descomprimir y copiar
@@ -371,7 +371,7 @@ para todos los usuarios y el proyecto en una carpeta simple, por ejemplo
 2. Compilar el front y crear la carpeta de logs:
 
    ```powershell
-   cd C:\gestion-stock
+   cd C:\sistema-stock
    npm install
    npm run build
    New-Item -ItemType Directory -Force .\logs | Out-Null
@@ -380,19 +380,19 @@ para todos los usuarios y el proyecto en una carpeta simple, por ejemplo
 3. Registrar el servicio (PowerShell **como administrador**):
 
    ```powershell
-   $proyecto = 'C:\gestion-stock'
+   $proyecto = 'C:\sistema-stock'
    $node = (Get-Command node).Source
    $nssm = 'C:\Program Files\nssm\nssm.exe'
 
-   & $nssm install GestionStock $node "$proyecto\server\index.js"
-   & $nssm set GestionStock AppDirectory $proyecto
-   & $nssm set GestionStock AppEnvironmentExtra NODE_ENV=production
-   & $nssm set GestionStock Start SERVICE_AUTO_START
-   & $nssm set GestionStock AppExit Default Restart
-   & $nssm set GestionStock AppStdout "$proyecto\logs\api.log"
-   & $nssm set GestionStock AppStderr "$proyecto\logs\api.err.log"
-   & $nssm set GestionStock AppRotateFiles 1
-   & $nssm start GestionStock
+   & $nssm install SistemaStock $node "$proyecto\server\index.js"
+   & $nssm set SistemaStock AppDirectory $proyecto
+   & $nssm set SistemaStock AppEnvironmentExtra NODE_ENV=production
+   & $nssm set SistemaStock Start SERVICE_AUTO_START
+   & $nssm set SistemaStock AppExit Default Restart
+   & $nssm set SistemaStock AppStdout "$proyecto\logs\api.log"
+   & $nssm set SistemaStock AppStderr "$proyecto\logs\api.err.log"
+   & $nssm set SistemaStock AppRotateFiles 1
+   & $nssm start SistemaStock
    ```
 
    `AppEnvironmentExtra NODE_ENV=production` es importante: sin eso Express no
@@ -401,7 +401,7 @@ para todos los usuarios y el proyecto en una carpeta simple, por ejemplo
 4. Verificar:
 
    ```powershell
-   Get-Service GestionStock
+   Get-Service SistemaStock
    curl.exe http://localhost:3000/api/salud
    ```
 
@@ -409,7 +409,7 @@ para todos los usuarios y el proyecto en una carpeta simple, por ejemplo
    mano para ver el error:
 
    ```powershell
-   cd C:\gestion-stock
+   cd C:\sistema-stock
    $env:NODE_ENV = 'production'
    node server/index.js
    ```
@@ -417,8 +417,8 @@ para todos los usuarios y el proyecto en una carpeta simple, por ejemplo
 6. Para desinstalarlo:
 
    ```powershell
-   & 'C:\Program Files\nssm\nssm.exe' stop GestionStock
-   & 'C:\Program Files\nssm\nssm.exe' remove GestionStock confirm
+   & 'C:\Program Files\nssm\nssm.exe' stop SistemaStock
+   & 'C:\Program Files\nssm\nssm.exe' remove SistemaStock confirm
    ```
 
 > El servicio queda configurado con inicio automático y reinicio ante fallos.
@@ -444,7 +444,7 @@ En una PowerShell **como administrador**:
 
 ```powershell
 New-NetFirewallRule `
-  -DisplayName "Gestion Stock 3000" `
+  -DisplayName "Sistema Stock 3000" `
   -Direction Inbound `
   -Protocol TCP `
   -LocalPort 3000 `
@@ -810,13 +810,13 @@ cuando el servicio no arranca.
 Con PostgreSQL corriendo, desde una terminal:
 
 ```powershell
-pg_dump -h localhost -U stock_app -d gestion_stock -Fc -f gestion_stock.dump
+pg_dump -h localhost -U stock_app -d sistema_stock -Fc -f sistema_stock.dump
 ```
 
 Restaurar (detener la app antes):
 
 ```powershell
-pg_restore -h localhost -U stock_app -d gestion_stock --clean --if-exists gestion_stock.dump
+pg_restore -h localhost -U stock_app -d sistema_stock --clean --if-exists sistema_stock.dump
 ```
 
 - `-Fc` genera un formato comprimido y portable.
@@ -843,7 +843,7 @@ El script `actualizar.ps1` hace, en orden:
 2. `npm install`.
 3. `npm run db:migrate`.
 4. `npm run build`.
-5. Reinicia el servicio `GestionStock` con NSSM.
+5. Reinicia el servicio `SistemaStock` con NSSM.
 
 Opciones útiles:
 
@@ -862,7 +862,7 @@ git pull origin main
 npm install
 npm run db:migrate
 npm run build
-nssm restart GestionStock
+nssm restart SistemaStock
 ```
 
 > `db:migrate` es seguro para las tablas actuales porque usa `IF NOT EXISTS`.
@@ -905,7 +905,7 @@ nssm restart GestionStock
 | `No se encontró PostgreSQL portable...` | No está instalado el portable y no hay nada en 5432 | Instalar el servicio de PostgreSQL o crear el portable; verificar `npm run db:status`. |
 | `ECONNREFUSED 127.0.0.1:5432` | PostgreSQL no está corriendo | `npm run db:start` o iniciar el servicio. |
 | `password authentication failed` | `DATABASE_URL` incorrecta | Revisar usuario, contraseña y nombre de la base en `server/.env`. |
-| `database "gestion_stock" does not exist` | Falta crear la base | Ejecutar el `CREATE DATABASE`. |
+| `database "sistema_stock" does not exist` | Falta crear la base | Ejecutar el `CREATE DATABASE`. |
 | `relation "..." does not exist` | Falta migrar | `npm run db:migrate`. |
 | `401 No autenticado` | No se hizo login o la cookie expiró | `POST /api/auth/login`; en el front, incluir credenciales. |
 | `409 Stock insuficiente` | La salida supera el stock | Reponer stock con una entrada o ajustar la cantidad. |
@@ -1013,11 +1013,11 @@ Sugerencias de mensajes:
 2. En la PC servidor: instalar Node 22+, PostgreSQL 17 y Git.
 3. `git clone` / `git pull`.
 4. `npm ci`.
-5. Crear el rol `stock_app` y la base `gestion_stock`.
+5. Crear el rol `stock_app` y la base `sistema_stock`.
 6. `Copy-Item server/.env.example server/.env` y completar credenciales.
 7. `npm run db:migrate` y `npm run db:check`.
 8. `npm run build`.
-9. Instalar el servicio con NSSM y verificar `Get-Service GestionStock` (ver
+9. Instalar el servicio con NSSM y verificar `Get-Service SistemaStock` (ver
    [8.1](#81-arranque-automático-como-servicio-de-windows-nssm)).
 10. Abrir el puerto 3000 en el firewall (red privada) y reservar la IP.
 11. Probar `http://IP:3000/api/salud` desde otra PC.

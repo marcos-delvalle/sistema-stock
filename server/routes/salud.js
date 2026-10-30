@@ -12,7 +12,7 @@ rutasSalud.get('/', async (_req, res) => {
 
   res.status(baseDeDatos ? 200 : 503).json({
     ok: baseDeDatos,
-    servicio: 'gestion-stock-api',
+    servicio: 'sistema-stock-api',
     baseDeDatos: baseDeDatos ? 'conectada' : 'sin conexión',
     fecha: new Date().toISOString(),
   })

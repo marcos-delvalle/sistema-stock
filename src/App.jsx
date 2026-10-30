@@ -143,7 +143,7 @@ function Layout({ usuario }) {
                 <AppBar position="fixed" sx={{ zIndex: 1201 }}>
                     <Toolbar>
                         <Typography variant="h6" sx={{ flexGrow: 1 }}>
-                            Soporte Técnico - Stock
+                            Sistema Stock
                         </Typography>
                         <Typography
                             variant="body2"

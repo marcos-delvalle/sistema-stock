@@ -1,4 +1,4 @@
-# Backend — Gestión de Stock
+# Backend — Sistema Stock
 
 Servidor Express + PostgreSQL del sistema de stock. En desarrollo, Vite hace de proxy
 hacia este servidor; en producción, Express también entrega el React compilado.
@@ -53,7 +53,7 @@ Abrir **pgAdmin** (viene con el instalador) o `psql` y ejecutar como superusuari
 
 ```sql
 CREATE ROLE stock_app LOGIN PASSWORD 'una_clave_segura';
-CREATE DATABASE gestion_stock OWNER stock_app;
+CREATE DATABASE sistema_stock OWNER stock_app;
 ```
 
 > Se usa un usuario dedicado (`stock_app`) y no el superusuario `postgres`.
@@ -72,7 +72,7 @@ Completar los valores reales:
 
 ```env
 PORT=3000
-DATABASE_URL=postgresql://stock_app:TU_CLAVE_DE_BASE@localhost:5432/gestion_stock
+DATABASE_URL=postgresql://stock_app:TU_CLAVE_DE_BASE@localhost:5432/sistema_stock
 ADMIN_USER=admin
 ADMIN_PASSWORD=ELEGI_UNA_CLAVE_LARGA_Y_UNICA
 JWT_SECRET=GENERA_UN_SECRETO_ALEATORIO
@@ -126,7 +126,7 @@ Respuesta esperada:
 ```json
 {
   "ok": true,
-  "servicio": "gestion-stock-api",
+  "servicio": "sistema-stock-api",
   "baseDeDatos": "conectada",
   "fecha": "2026-10-27T..."
 }
