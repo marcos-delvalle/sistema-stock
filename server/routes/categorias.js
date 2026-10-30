@@ -53,6 +53,23 @@ rutasCategorias.delete('/:id', asyncHandler(async (req, res) => {
   const id = idDesdeParams(req.params.id)
 
   try {
+    // Los artículos dados de baja siguen existiendo y referencian la categoría,
+    // así que la baja se bloquea aunque estén inactivos.
+    const { rows } = await consultar(
+      'SELECT count(*)::int AS cantidad FROM articulos WHERE categoria_id = $1',
+      [id]
+    )
+
+    const cantidad = rows[0]?.cantidad ?? 0
+
+    if (cantidad > 0) {
+      throw new ErrorHttp(
+        409,
+        `No se puede eliminar: hay ${cantidad} artículo${cantidad === 1 ? '' : 's'} ` +
+        'en esta categoría. Movelos a otra categoría primero.'
+      )
+    }
+
     const { rowCount } = await consultar(
       'DELETE FROM categorias WHERE id = $1',
       [id]

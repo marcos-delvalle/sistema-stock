@@ -2,14 +2,16 @@ import {
     Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
     Paper, Chip, Button, Box, IconButton, Typography, Tooltip, TableSortLabel,
 } from '@mui/material'
-import { Edit } from '@mui/icons-material'
+import { Category, Edit } from '@mui/icons-material'
 import { useState } from 'react'
 import ArticuloDialog from '../components/ArticuloDialog'
+import CategoriaDialog from '../components/CategoriaDialog'
 
 function Articulos({ articulos, categorias }) {
 
     const [articuloEditando, setArticuloEditando] = useState(null)
     const [dialogoAbierto, setDialogoAbierto] = useState(false)
+    const [categoriasAbierto, setCategoriasAbierto] = useState(false)
     const [orden, setOrden] = useState({ campo: 'nombre', dir: 'asc' })
 
     function abrirNuevo() {
@@ -71,7 +73,16 @@ function Articulos({ articulos, categorias }) {
         <>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
                 <Typography variant="h4">Artículos</Typography>
-                <Button variant="contained" onClick={abrirNuevo}>Nuevo artículo</Button>
+                <Box sx={{ display: 'flex', gap: 1 }}>
+                    <Button
+                        variant="outlined"
+                        startIcon={<Category />}
+                        onClick={() => setCategoriasAbierto(true)}
+                    >
+                        Categorías
+                    </Button>
+                    <Button variant="contained" onClick={abrirNuevo}>Nuevo artículo</Button>
+                </Box>
             </Box>
 
             <ArticuloDialog
@@ -80,6 +91,13 @@ function Articulos({ articulos, categorias }) {
                 onCerrar={() => setDialogoAbierto(false)}
                 categorias={categorias}
                 articulo={articuloEditando}
+            />
+
+            <CategoriaDialog
+                abierto={categoriasAbierto}
+                onCerrar={() => setCategoriasAbierto(false)}
+                categorias={categorias}
+                articulos={articulos}
             />
 
             <TableContainer component={Paper}>
