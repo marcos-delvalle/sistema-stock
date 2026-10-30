@@ -449,11 +449,12 @@ New-NetFirewallRule `
   -Protocol TCP `
   -LocalPort 3000 `
   -Action Allow `
-  -Profile Private
+  -Profile Private,Domain
 ```
 
-- La red debe estar marcada como **Privada** en Windows. Si está como Pública,
-  el firewall puede bloquear la regla.
+- La regla cubre redes **Privadas** y de **Dominio** (habitual en una PC de
+  empresa). Si la red figura como **Pública**, el firewall puede bloquearla:
+  cambiala a Privada o agregá `Public` con cuidado.
 - No abrir el puerto 5432 (PostgreSQL) a la red. Solo la API debe ser accesible.
 - Si se usa Vite en modo desarrollo desde otra PC, también hay que abrir el
   puerto 5173 y ejecutar Vite con `--host`. Para uso real es preferible
@@ -879,7 +880,7 @@ nssm restart GestionStock
   cookies falsas.
 - **No subir `server/.env`** ni `CREDENCIALES.txt` al repositorio.
 - **PostgreSQL solo en localhost.** No abrir el puerto 5432 al firewall.
-- **Firewall:** permitir el puerto 3000 solo en la red privada.
+- **Firewall:** permitir el puerto 3000 solo en la red privada o de dominio.
 - **HTTP en LAN:** la cookie tiene `httpOnly` y `SameSite=Lax`, pero el tráfico
   no va cifrado. Para mayor seguridad, se puede poner un proxy con HTTPS
   (IIS, Caddy, Nginx) y cambiar la cookie a `secure: true`.
@@ -910,7 +911,7 @@ nssm restart GestionStock
 | `409 Stock insuficiente` | La salida supera el stock | Reponer stock con una entrada o ajustar la cantidad. |
 | El puerto 3000 está ocupado | Otro proceso lo usa | `netstat -ano | findstr :3000`; cambiar `PORT` y el proxy de Vite. |
 | En producción se ve la API pero no el front | Falta `dist/` | `npm run build` y reiniciar `npm start`. |
-| Desde otra PC no abre | Firewall, IP o red pública | Abrir el puerto 3000 en red privada; probar `/api/salud`. |
+| Desde otra PC no abre | Firewall, IP o red pública | Abrir el puerto 3000 en red privada/dominio; probar `/api/salud`. |
 | `npm run dev:all` falla al arrancar la base | Servicio en otro puerto o sin PostgreSQL | Usar `npm run server` + `npm run dev`, o ajustar la conexión. |
 | La consola muestra caracteres raros | Codificación de PowerShell | No afecta el funcionamiento; se puede ajustar la fuente/encoding. |
 | La interfaz muestra un error de conexión | La API está caída o la sesión expiró | Revisar `npm run server` y `/api/salud`; volver a iniciar sesión. |
