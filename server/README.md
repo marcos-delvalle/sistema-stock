@@ -230,6 +230,10 @@ npm run build
 npm start            # NODE_ENV=production: Express sirve dist/ + API en el puerto 3000
 ```
 
+> En la PC servidor se puede usar el lanzador `Iniciar Sistema Stock.vbs` de la
+> raíz del proyecto, que arranca la base y la API sin abrir consola (ver README
+> principal, sección 8.2).
+
 ## Estructura
 
 ```
@@ -261,7 +265,8 @@ server/
 │   ├── auth.js           Verificación de la cookie de sesión
 │   └── errores.js        404 y manejo centralizado de errores
 ├── scripts/
-│   └── postgres-local.ps1  Arranque/detención del PostgreSQL portable
+│   ├── postgres-local.ps1  Arranque/detención del PostgreSQL portable
+│   └── control-local.ps1   Inicio/reinicio/detención sin consola (lanzadores)
 └── .env                  Credenciales locales (ignorado por git)
 ```
 
