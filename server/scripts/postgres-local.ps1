@@ -1,4 +1,4 @@
-param(
+﻿param(
     [ValidateSet('start', 'stop', 'status')]
     [string]$Accion = 'status'
 )

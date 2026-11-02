@@ -1,0 +1,21 @@
+﻿Sistema Stock - Lanzadores
+
+No hace falta abrir ninguna consola. Solo doble clic:
+
+- "Iniciar Sistema Stock.vbs"
+  Arranca la base de datos y el sistema, y abre el navegador en
+  http://localhost:3000
+
+- "Reiniciar Sistema Stock.vbs"
+  Úsalo si la página deja de responder o después de una actualización.
+  Reinicia solo el sistema; la base de datos queda corriendo.
+
+- "Detener Sistema Stock.vbs"
+  Apaga el sistema. La base de datos queda corriendo.
+
+Importante:
+- Ejecutalos en la PC donde está instalado el sistema.
+- Usá la misma cuenta de Windows con la que se instaló.
+- Si Windows bloquea los archivos .vbs, avisale al administrador.
+
+Los registros quedan en la carpeta "logs".
