@@ -5,6 +5,7 @@ import {
 import { useState } from 'react'
 import { api } from '../api/client'
 import { useDatos } from '../context/DatosContext'
+import { normalizar } from '../utils/texto'
 
 function CrearImpresoraDialog({ abierto, onCerrar, articulos, modelos, categorias }) {
     const { recargar, notificar } = useDatos()
@@ -46,12 +47,12 @@ function CrearImpresoraDialog({ abierto, onCerrar, articulos, modelos, categoria
         }
 
         const existe = modelos.some((m) =>
-            m.marca.toLowerCase() === marca.trim().toLowerCase() &&
-            m.modelo.toLowerCase() === nombreModelo.trim().toLowerCase()
+            normalizar(m.marca) === normalizar(marca) &&
+            normalizar(m.modelo) === normalizar(nombreModelo)
         )
 
         if (existe) {
-            setError('Ya existe un modelo con esa marca y modelo.')
+            setError('Ya existe una impresora con esa marca y modelo.')
             return
         }
 

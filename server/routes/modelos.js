@@ -23,6 +23,22 @@ async function validarArticulo(articuloId) {
   return articuloId
 }
 
+async function validarDuplicado(marca, modelo, exceptoId = null) {
+  const { rows } = await consultar(
+    `SELECT id
+     FROM modelos
+     WHERE lower(marca) = lower($1)
+       AND lower(modelo) = lower($2)
+       AND ($3::int IS NULL OR id <> $3)
+     LIMIT 1`,
+    [marca, modelo, exceptoId]
+  )
+
+  if (rows[0]) {
+    throw new ErrorHttp(409, 'Ya existe una impresora con esa marca y modelo')
+  }
+}
+
 rutasModelos.get('/', asyncHandler(async (_req, res) => {
   const { rows } = await consultar(
     `SELECT ${COLUMNAS}
@@ -42,6 +58,7 @@ rutasModelos.post('/', asyncHandler(async (req, res) => {
 
   try {
     await validarArticulo(articuloId)
+    await validarDuplicado(marca, modelo)
 
     const { rows } = await consultar(
       `INSERT INTO modelos (marca, modelo, articulo_id)
@@ -66,6 +83,7 @@ rutasModelos.put('/:id', asyncHandler(async (req, res) => {
 
   try {
     await validarArticulo(articuloId)
+    await validarDuplicado(marca, modelo, id)
 
     const { rows } = await consultar(
       `UPDATE modelos

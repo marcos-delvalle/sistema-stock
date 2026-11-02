@@ -8,15 +8,7 @@ import { useState } from 'react'
 import DependenciaDialog from '../components/DependenciaDialog'
 import OficinaDialog from '../components/OficinaDialog'
 import OficinaDetalleDialog from '../components/OficinaDetalleDialog'
-
-// Minúsculas y sin acentos, para que "Educacion" encuentre "Educación"
-function normalizar(texto) {
-    return String(texto)
-        .trim()
-        .toLowerCase()
-        .normalize('NFD')
-        .replace(/[\u0300-\u036f]/g, '')
-}
+import { normalizar } from '../utils/texto'
 
 function Dependencias({
     dependencias, oficinas, unidades, modelos, movimientos, articulos,
@@ -289,6 +281,7 @@ function Dependencias({
                     dependenciaId={oficinaEditando?.dependencia_id ?? depParaOficina}
                     dependencias={dependenciasActivas}
                     unidades={unidades}
+                    oficinas={oficinasActivas}
                 />
             )}
 

@@ -5,13 +5,14 @@ import {
 import { useState } from 'react'
 import { api } from '../api/client'
 import { useDatos } from '../context/DatosContext'
+import { normalizar } from '../utils/texto'
 
 /**
  * Alta y edición de una oficina.
  * Permite moverla de dependencia y bloquea la baja si tiene impresoras asignadas.
  */
 function OficinaDialog({
-    abierto, onCerrar, oficina, dependenciaId, dependencias, unidades,
+    abierto, onCerrar, oficina, dependenciaId, dependencias, unidades, oficinas = [],
 }) {
     const { recargar, notificar } = useDatos()
     const editando = Boolean(oficina)
@@ -28,6 +29,17 @@ function OficinaDialog({
         }
         if (!depId) {
             setError('Elegí una dependencia')
+            return
+        }
+
+        const duplicada = oficinas.some((o) => (
+            o.id !== oficina?.id &&
+            o.dependencia_id === Number(depId) &&
+            normalizar(o.nombre) === normalizar(nombre)
+        ))
+
+        if (duplicada) {
+            setError('Ya existe una oficina con ese nombre en esa dependencia.')
             return
         }
 

@@ -25,6 +25,21 @@ async function validarDependencia(dependenciaId) {
   }
 }
 
+// Compara sin distinguir mayúsculas ni acentos dentro de la misma dependencia.
+async function buscarDuplicada(nombre, dependenciaId, exceptoId = null) {
+  const { rows } = await consultar(
+    `SELECT id, activo
+     FROM oficinas
+     WHERE dependencia_id = $1
+       AND lower(nombre) = lower($2)
+       AND ($3::int IS NULL OR id <> $3)
+     LIMIT 1`,
+    [dependenciaId, nombre, exceptoId]
+  )
+
+  return rows[0] || null
+}
+
 rutasOficinas.get('/', asyncHandler(async (req, res) => {
   const dependenciaId = enteroOpcional(req.query.dependencia_id, 'dependencia_id')
   const activo = booleanoOpcional(req.query.activo, 'activo')
@@ -49,14 +64,27 @@ rutasOficinas.post('/', asyncHandler(async (req, res) => {
   try {
     await validarDependencia(dependenciaId)
 
-    const { rows } = await consultar(
-      `INSERT INTO oficinas (nombre, dependencia_id)
-       VALUES ($1, $2)
-       ON CONFLICT (dependencia_id, nombre)
-       DO UPDATE SET activo = true, actualizado_en = now()
-       RETURNING ${COLUMNAS}`,
-      [nombre, dependenciaId]
-    )
+    const existente = await buscarDuplicada(nombre, dependenciaId)
+
+    if (existente?.activo) {
+      throw new ErrorHttp(409, 'Ya existe una oficina con ese nombre en esa dependencia')
+    }
+
+    // Si estaba dada de baja, se reactiva en vez de crear otra fila.
+    const { rows } = existente
+      ? await consultar(
+        `UPDATE oficinas
+         SET nombre = $1, activo = true, actualizado_en = now()
+         WHERE id = $2
+         RETURNING ${COLUMNAS}`,
+        [nombre, existente.id]
+      )
+      : await consultar(
+        `INSERT INTO oficinas (nombre, dependencia_id)
+         VALUES ($1, $2)
+         RETURNING ${COLUMNAS}`,
+        [nombre, dependenciaId]
+      )
 
     res.status(201).json(rows[0])
   } catch (error) {
@@ -71,6 +99,12 @@ rutasOficinas.put('/:id', asyncHandler(async (req, res) => {
 
   try {
     await validarDependencia(dependenciaId)
+
+    const duplicada = await buscarDuplicada(nombre, dependenciaId, id)
+
+    if (duplicada) {
+      throw new ErrorHttp(409, 'Ya existe una oficina con ese nombre en esa dependencia')
+    }
 
     const { rows } = await consultar(
       `UPDATE oficinas
