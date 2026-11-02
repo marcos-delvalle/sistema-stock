@@ -439,6 +439,11 @@ clic. **No abren ninguna consola**:
 | `Reiniciar Sistema Stock.vbs` | Reinicia solo la API (la base queda corriendo). |
 | `Detener Sistema Stock.vbs` | Apaga la API (la base queda corriendo). |
 
+> Si Windows muestra **"la directiva de grupo bloquea este programa"** al abrir
+> un `.vbs`, usá los `.bat` equivalentes de la misma carpeta. Hacen lo mismo y
+> no dependen de Windows Script Host (pueden mostrar una consola por un
+> instante; se cierra sola).
+
 Requisitos:
 
 - Ejecutarlos en la PC donde está instalado el sistema, con **la misma cuenta de
@@ -1046,6 +1051,7 @@ Sugerencias de mensajes:
 | `Iniciar Sistema Stock.vbs` | Lanzador de doble clic: arranca la base y la API. |
 | `Reiniciar Sistema Stock.vbs` | Lanzador de doble clic: reinicia la API. |
 | `Detener Sistema Stock.vbs` | Lanzador de doble clic: detiene la API. |
+| `Iniciar Sistema Stock.bat` y equivalentes | Alternativa a los `.vbs` si la directiva de grupo bloquea Windows Script Host. |
 | `server/index.js` | Arranque en `0.0.0.0` y apagado ordenado. |
 | `server/app.js` | Middlewares, rutas y servido de `dist/`. |
 | `server/db/esquema.sql` | Tablas, CHECKs, FKs, índices y categorías base. |
