@@ -6,11 +6,21 @@ import { useState } from 'react'
 import { api } from '../api/client'
 import { useDatos } from '../context/DatosContext'
 
+// Fecha de hoy en formato YYYY-MM-DD, en hora local (no UTC).
+function hoyLocal() {
+    const ahora = new Date()
+    const mes = String(ahora.getMonth() + 1).padStart(2, '0')
+    const dia = String(ahora.getDate()).padStart(2, '0')
+
+    return `${ahora.getFullYear()}-${mes}-${dia}`
+}
+
 function NuevoMovimientoDialog({ abierto, onCerrar, articulos, oficinas }) {
     const { recargar, notificar } = useDatos()
 
     const [articuloId, setArticuloId] = useState('')
     const [tipo, setTipo] = useState('salida')
+    const [fecha, setFecha] = useState(hoyLocal())
     const [cantidad, setCantidad] = useState(1)
     const [oficinaId, setOficinaId] = useState('')
     const [error, setError] = useState('')
@@ -23,6 +33,10 @@ function NuevoMovimientoDialog({ abierto, onCerrar, articulos, oficinas }) {
 
         if (!articulo) {
             setError('Elegí un artículo.')
+            return
+        }
+        if (!fecha) {
+            setError('Elegí una fecha.')
             return
         }
         if (!cant || cant <= 0) {
@@ -50,6 +64,7 @@ function NuevoMovimientoDialog({ abierto, onCerrar, articulos, oficinas }) {
                 tipo,
                 cantidad: cant,
                 oficina_id: tipo === 'salida' ? Number(oficinaId) : null,
+                fecha,
             })
 
             notificar(tipo === 'entrada' ? 'Entrada registrada' : 'Salida registrada')
@@ -91,6 +106,14 @@ function NuevoMovimientoDialog({ abierto, onCerrar, articulos, oficinas }) {
                         <MenuItem value="entrada">Entrada</MenuItem>
                         <MenuItem value="salida">Salida</MenuItem>
                     </TextField>
+
+                    <TextField
+                        label="Fecha"
+                        type="date"
+                        value={fecha}
+                        onChange={(e) => { setFecha(e.target.value); setError('') }}
+                        slotProps={{ inputLabel: { shrink: true } }}
+                    />
 
                     <TextField
                         label="Cantidad"
