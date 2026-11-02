@@ -19,8 +19,9 @@ function Historial({ movimientos, articulos, oficinas }) {
         const articuloNombre = m.articulo_nombre || articulos.find((a) => a.id === m.articulo_id)?.nombre || ''
         const oficinaNombre = m.oficina_nombre || oficinas.find((o) => o.id === m.oficina_id)?.nombre || ''
         const tipoTexto = m.tipo === 'entrada' ? 'entrada' : 'salida'
+        const estadoStock = m.afecta_stock === false ? 'no afecta stock' : ''
 
-        return [articuloNombre, oficinaNombre, tipoTexto, String(m.fecha), formatearFecha(m.fecha)]
+        return [articuloNombre, oficinaNombre, tipoTexto, estadoStock, String(m.fecha), formatearFecha(m.fecha)]
             .some((texto) => normalizar(texto).includes(termino))
     })
 
@@ -73,10 +74,19 @@ function Historial({ movimientos, articulos, oficinas }) {
                                     {m.articulo_nombre || articulos.find((a) => a.id === m.articulo_id)?.nombre || '—'}
                                 </TableCell>
                                 <TableCell>
-                                    <Chip
-                                        label={m.tipo === 'entrada' ? 'Entrada' : 'Salida'}
-                                        color={m.tipo === 'entrada' ? 'success' : 'primary'}
-                                    />
+                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, flexWrap: 'wrap' }}>
+                                        <Chip
+                                            label={m.tipo === 'entrada' ? 'Entrada' : 'Salida'}
+                                            color={m.tipo === 'entrada' ? 'success' : 'primary'}
+                                        />
+                                        {m.afecta_stock === false && (
+                                            <Chip
+                                                size="small"
+                                                variant="outlined"
+                                                label="No afecta stock"
+                                            />
+                                        )}
+                                    </Box>
                                 </TableCell>
                                 <TableCell align="right">{m.cantidad}</TableCell>
                                 <TableCell>

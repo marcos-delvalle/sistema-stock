@@ -4,6 +4,7 @@ import { asyncHandler, ErrorHttp } from '../lib/http.js'
 import { traducirErrorDb } from '../lib/dbErrores.js'
 import { enTransaccion } from '../lib/transaccion.js'
 import {
+  booleano,
   enteroOpcional,
   enteroPositivo,
   fechaOpcional,
@@ -25,7 +26,8 @@ rutasMovimientos.get('/', asyncHandler(async (req, res) => {
 
   const { rows } = await consultar(
     `SELECT m.id, m.articulo_id, a.nombre AS articulo_nombre,
-            m.tipo, m.cantidad, m.oficina_id, o.nombre AS oficina_nombre, m.fecha
+            m.tipo, m.cantidad, m.oficina_id, o.nombre AS oficina_nombre, m.fecha,
+            m.afecta_stock
      FROM movimientos m
      JOIN articulos a ON a.id = m.articulo_id
      LEFT JOIN oficinas o ON o.id = m.oficina_id
@@ -45,9 +47,11 @@ rutasMovimientos.get('/', asyncHandler(async (req, res) => {
  * Alta de movimiento.
  * Todo ocurre en una transacción y con la fila del artículo bloqueada:
  *   1. Se lee el stock actual con FOR UPDATE.
- *   2. Se valida que alcance (salidas).
+ *   2. Se valida que alcance (salidas, solo si afecta_stock).
  *   3. Se inserta el movimiento.
- *   4. Se actualiza el stock.
+ *   4. Se actualiza el stock (solo si afecta_stock).
+ * Si afecta_stock es false, el movimiento queda registrado sin validar ni
+ * modificar el stock: sirve para cargar movimientos históricos.
  * Si cualquier paso falla, ROLLBACK: no queda stock descontado sin movimiento.
  */
 rutasMovimientos.post('/', asyncHandler(async (req, res) => {
@@ -60,6 +64,7 @@ rutasMovimientos.post('/', asyncHandler(async (req, res) => {
   const fecha = req.body?.fecha
     ? fechaOpcional(req.body.fecha, 'fecha')
     : null
+  const afectaStock = booleano(req.body?.afecta_stock, 'afecta_stock', true)
 
   if (tipo !== 'entrada' && tipo !== 'salida') {
     throw new ErrorHttp(400, 'El campo "tipo" debe ser "entrada" o "salida"')
@@ -103,7 +108,7 @@ rutasMovimientos.post('/', asyncHandler(async (req, res) => {
           throw new ErrorHttp(400, 'La oficina no existe o está inactiva')
         }
 
-        if (articulo.stock_actual < cantidad) {
+        if (afectaStock && articulo.stock_actual < cantidad) {
           throw new ErrorHttp(
             409,
             `Stock insuficiente: hay ${articulo.stock_actual} y se intentan sacar ${cantidad}`
@@ -111,27 +116,30 @@ rutasMovimientos.post('/', asyncHandler(async (req, res) => {
         }
       }
 
-      const nuevoStock = tipo === 'entrada'
-        ? articulo.stock_actual + cantidad
-        : articulo.stock_actual - cantidad
+      if (afectaStock) {
+        const nuevoStock = tipo === 'entrada'
+          ? articulo.stock_actual + cantidad
+          : articulo.stock_actual - cantidad
 
-      await cliente.query(
-        `UPDATE articulos
-         SET stock_actual = $1, actualizado_en = now()
-         WHERE id = $2`,
-        [nuevoStock, articuloId]
-      )
+        await cliente.query(
+          `UPDATE articulos
+           SET stock_actual = $1, actualizado_en = now()
+           WHERE id = $2`,
+          [nuevoStock, articuloId]
+        )
+      }
 
       const { rows } = await cliente.query(
-        `INSERT INTO movimientos (articulo_id, tipo, cantidad, oficina_id, fecha)
-         VALUES ($1, $2, $3, $4, COALESCE($5::date, CURRENT_DATE))
+        `INSERT INTO movimientos (articulo_id, tipo, cantidad, oficina_id, fecha, afecta_stock)
+         VALUES ($1, $2, $3, $4, COALESCE($5::date, CURRENT_DATE), $6)
          RETURNING id`,
-        [articuloId, tipo, cantidad, oficinaId, fecha]
+        [articuloId, tipo, cantidad, oficinaId, fecha, afectaStock]
       )
 
       const { rows: detalle } = await cliente.query(
         `SELECT m.id, m.articulo_id, a.nombre AS articulo_nombre,
-                m.tipo, m.cantidad, m.oficina_id, o.nombre AS oficina_nombre, m.fecha
+                m.tipo, m.cantidad, m.oficina_id, o.nombre AS oficina_nombre, m.fecha,
+                m.afecta_stock
          FROM movimientos m
          JOIN articulos a ON a.id = m.articulo_id
          LEFT JOIN oficinas o ON o.id = m.oficina_id

@@ -1,6 +1,6 @@
 import {
-    Alert, Autocomplete, Box, Button, Dialog, DialogActions, DialogContent,
-    DialogTitle, MenuItem, TextField, Typography,
+    Alert, Autocomplete, Box, Button, Checkbox, Dialog, DialogActions,
+    DialogContent, DialogTitle, FormControlLabel, MenuItem, TextField, Typography,
 } from '@mui/material'
 import { useState } from 'react'
 import dayjs from 'dayjs'
@@ -15,6 +15,7 @@ function NuevoMovimientoDialog({ abierto, onCerrar, articulos, oficinas }) {
     const [tipo, setTipo] = useState('salida')
     const [fecha, setFecha] = useState(() => dayjs())
     const [cantidad, setCantidad] = useState(1)
+    const [afectaStock, setAfectaStock] = useState(true)
     const [oficinaId, setOficinaId] = useState('')
     const [error, setError] = useState('')
     const [guardando, setGuardando] = useState(false)
@@ -40,7 +41,7 @@ function NuevoMovimientoDialog({ abierto, onCerrar, articulos, oficinas }) {
             setError('Elegí la oficina de destino.')
             return
         }
-        if (tipo === 'salida' && cant > articulo.stock_actual) {
+        if (tipo === 'salida' && afectaStock && cant > articulo.stock_actual) {
             setError(
                 `Stock insuficiente: solo hay ${articulo.stock_actual} ` +
                 `unidad${articulo.stock_actual === 1 ? '' : 'es'}.`
@@ -58,9 +59,11 @@ function NuevoMovimientoDialog({ abierto, onCerrar, articulos, oficinas }) {
                 cantidad: cant,
                 oficina_id: tipo === 'salida' ? Number(oficinaId) : null,
                 fecha: fecha.format('YYYY-MM-DD'),
+                afecta_stock: afectaStock,
             })
 
-            notificar(tipo === 'entrada' ? 'Entrada registrada' : 'Salida registrada')
+            const mensaje = tipo === 'entrada' ? 'Entrada registrada' : 'Salida registrada'
+            notificar(afectaStock ? mensaje : `${mensaje} sin modificar stock`)
             await recargar()
             onCerrar()
         } catch (e) {
@@ -108,17 +111,39 @@ function NuevoMovimientoDialog({ abierto, onCerrar, articulos, oficinas }) {
                         slotProps={{ textField: { fullWidth: true } }}
                     />
 
-                    <TextField
-                        label="Cantidad"
-                        type="number"
-                        value={cantidad}
-                        onChange={(e) => {
-                            const v = Number(e.target.value)
-                            setCantidad(v < 1 ? 1 : v)
-                            setError('')
-                        }}
-                        helperText={articulo ? `Stock actual: ${articulo.stock_actual}` : ' '}
-                    />
+                    <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.5 }}>
+                        <TextField
+                            label="Cantidad"
+                            type="number"
+                            value={cantidad}
+                            onChange={(e) => {
+                                const v = Number(e.target.value)
+                                setCantidad(v < 1 ? 1 : v)
+                                setError('')
+                            }}
+                            helperText={
+                                !afectaStock
+                                    ? 'No modifica el stock actual'
+                                    : articulo
+                                        ? `Stock actual: ${articulo.stock_actual}`
+                                        : ' '
+                            }
+                            sx={{ flex: 1 }}
+                        />
+                        <FormControlLabel
+                            control={
+                                <Checkbox
+                                    checked={afectaStock}
+                                    onChange={(e) => {
+                                        setAfectaStock(e.target.checked)
+                                        setError('')
+                                    }}
+                                />
+                            }
+                            label={tipo === 'entrada' ? 'Sumar stock' : 'Descontar'}
+                            sx={{ mt: 1, mr: 0, whiteSpace: 'nowrap' }}
+                        />
+                    </Box>
 
                     {tipo === 'salida' ? (
                         <Autocomplete

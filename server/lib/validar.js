@@ -22,6 +22,14 @@ export function enteroOpcional(valor, campo) {
   return numero
 }
 
+export function booleano(valor, campo, porDefecto = false) {
+  if (valor === undefined || valor === null || valor === '') return porDefecto
+  if (valor === true || valor === 'true') return true
+  if (valor === false || valor === 'false') return false
+
+  throw new ErrorHttp(400, `El campo "${campo}" debe ser true o false`)
+}
+
 export function booleanoOpcional(valor, campo) {
   if (valor === undefined || valor === '') return null
   if (valor === 'true') return true

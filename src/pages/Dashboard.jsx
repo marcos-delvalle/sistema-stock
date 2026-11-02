@@ -453,11 +453,20 @@ function Dashboard({
                                                 {m.articulo_nombre || articulos.find((a) => a.id === m.articulo_id)?.nombre || '—'}
                                             </TableCell>
                                             <TableCell>
-                                                <Chip
-                                                    size="small"
-                                                    label={m.tipo === 'entrada' ? 'Entrada' : 'Salida'}
-                                                    color={m.tipo === 'entrada' ? 'success' : 'primary'}
-                                                />
+                                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, flexWrap: 'wrap' }}>
+                                                    <Chip
+                                                        size="small"
+                                                        label={m.tipo === 'entrada' ? 'Entrada' : 'Salida'}
+                                                        color={m.tipo === 'entrada' ? 'success' : 'primary'}
+                                                    />
+                                                    {m.afecta_stock === false && (
+                                                        <Chip
+                                                            size="small"
+                                                            variant="outlined"
+                                                            label="No afecta stock"
+                                                        />
+                                                    )}
+                                                </Box>
                                             </TableCell>
                                             <TableCell align="right">{m.cantidad}</TableCell>
                                             <TableCell sx={{ display: { xs: 'none', sm: 'table-cell' } }}>

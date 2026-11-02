@@ -185,7 +185,7 @@ La sesión dura 12 horas y viaja en una cookie `httpOnly` (JavaScript no puede l
 | GET | `/api/oficinas/:id/unidades` | Impresoras de la oficina |
 | GET | `/api/oficinas/:id/movimientos` | Solo salidas de la oficina |
 | GET | `/api/movimientos` | Historial con filtros |
-| POST | `/api/movimientos` | Alta con transacción de stock |
+| POST | `/api/movimientos` | Alta con transacción de stock (`afecta_stock: false` = solo historial) |
 
 Filtros de `GET /api/movimientos`: `articulo_id`, `oficina_id`, `tipo`,
 `desde`, `hasta` (formato `YYYY-MM-DD`).
@@ -195,6 +195,8 @@ Filtros de artículos: `categoria_id`, `activo`.
 
 - **Stock atómico**: el movimiento y el cambio de stock van en una transacción.
   Si no hay stock, responde `409` y no modifica nada.
+- **Carga histórica**: con `afecta_stock: false` el movimiento se registra sin
+  validar ni modificar el stock.
 - **Entrada**: no lleva oficina (va al depósito).
 - **Salida**: debe indicar una oficina activa.
 - **Alta de artículo con stock**: genera automáticamente una entrada en el historial.

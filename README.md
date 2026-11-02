@@ -555,6 +555,7 @@ Una unidad siempre pertenece a un modelo y a una oficina.
 - Muestra artículo, tipo, cantidad, fecha y oficina de destino.
 - Las entradas no tienen oficina (van al depósito).
 - Las salidas sí tienen oficina.
+- Los movimientos cargados sin afectar stock se marcan con **No afecta stock**.
 
 ### 10.8 Nuevo movimiento
 
@@ -563,8 +564,17 @@ El botón `+` del menú lateral abre el diálogo para registrar:
 - **Entrada:** suma stock al depósito; no lleva oficina.
 - **Salida:** descuenta stock y exige una oficina activa.
 
+Al lado de **Cantidad** hay una casilla marcada por defecto:
+
+- **Descontar** (salidas) o **Sumar stock** (entradas): el movimiento modifica
+  el stock actual.
+- Si se destilda, el movimiento se guarda en el historial pero **no toca el
+  stock**. Sirve para cargar movimientos pasados sin descontar (o sumar) dos
+  veces.
+
 El backend valida el stock y actualiza todo en una transacción. Si no alcanza,
-devuelve `409` y no modifica nada.
+devuelve `409` y no modifica nada. Con la casilla destildada no valida stock ni
+lo modifica.
 
 ---
 
@@ -582,7 +592,8 @@ devuelve `409` y no modifica nada.
 
 4. **No se puede sacar más de lo que hay.**
    La API responde `409` con el stock disponible. La operación es atómica:
-   no queda stock descontado sin movimiento.
+   no queda stock descontado sin movimiento. La validación no aplica cuando el
+   movimiento se registra con `afecta_stock = false` (carga histórica).
 
 5. **Alta con stock inicial.**
    Si se crea un artículo con `stock_actual > 0`, el backend genera
@@ -636,7 +647,7 @@ movimientos N ─── 0..1 oficinas      (entrada = NULL, salida = oficina)
 | `oficinas` | `id`, `nombre`, `dependencia_id`, `activo` | Única por dependencia + nombre. |
 | `modelos` | `id`, `marca`, `modelo`, `articulo_id` | Único por marca + modelo; `articulo_id` es el tóner. |
 | `unidades` | `id`, `modelo_id`, `nombre`, `oficina_id`, `ip`, `estado` | `estado`: `activa` o `inactiva`. |
-| `movimientos` | `id`, `articulo_id`, `tipo`, `cantidad`, `oficina_id`, `fecha` | `tipo`: `entrada` o `salida`; `cantidad > 0`. |
+| `movimientos` | `id`, `articulo_id`, `tipo`, `cantidad`, `oficina_id`, `fecha`, `afecta_stock` | `tipo`: `entrada` o `salida`; `cantidad > 0`; `afecta_stock = false` no modifica el stock. |
 
 Restricción importante en `movimientos`:
 
@@ -708,7 +719,7 @@ Invoke-RestMethod -Uri http://localhost:3000/api/categorias -WebSession $sesion
 | GET | `/api/oficinas/:id/unidades` | Impresoras de la oficina |
 | GET | `/api/oficinas/:id/movimientos` | Solo salidas de la oficina |
 | GET | `/api/movimientos` | Historial con filtros |
-| POST | `/api/movimientos` | Alta con transacción de stock |
+| POST | `/api/movimientos` | Alta con transacción de stock (`afecta_stock: false` = solo historial) |
 
 Filtros:
 
@@ -747,6 +758,22 @@ $salida = @{
 
 Invoke-RestMethod -Uri http://localhost:3000/api/movimientos `
   -Method Post -ContentType 'application/json' -Body $salida -WebSession $sesion
+```
+
+Registrar un movimiento histórico sin tocar el stock:
+
+```powershell
+$historico = @{
+  articulo_id = 1
+  tipo = 'salida'
+  cantidad = 2
+  oficina_id = 1
+  fecha = '2025-12-15'
+  afecta_stock = $false
+} | ConvertTo-Json
+
+Invoke-RestMethod -Uri http://localhost:3000/api/movimientos `
+  -Method Post -ContentType 'application/json' -Body $historico -WebSession $sesion
 ```
 
 ### 13.4 Códigos de error
