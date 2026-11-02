@@ -6,6 +6,8 @@ import { Category, Edit } from '@mui/icons-material'
 import { useState } from 'react'
 import ArticuloDialog from '../components/ArticuloDialog'
 import CategoriaDialog from '../components/CategoriaDialog'
+import Buscador from '../components/Buscador'
+import { normalizar } from '../utils/texto'
 
 function Articulos({ articulos, categorias }) {
 
@@ -13,6 +15,7 @@ function Articulos({ articulos, categorias }) {
     const [dialogoAbierto, setDialogoAbierto] = useState(false)
     const [categoriasAbierto, setCategoriasAbierto] = useState(false)
     const [orden, setOrden] = useState({ campo: 'nombre', dir: 'asc' })
+    const [busqueda, setBusqueda] = useState('')
 
     function abrirNuevo() {
         setArticuloEditando(null)
@@ -35,7 +38,15 @@ function Articulos({ articulos, categorias }) {
         }))
     }
 
-    const ordenados = [...articulos].sort((a, b) => {
+    const termino = normalizar(busqueda)
+
+    const filtrados = articulos.filter((a) => (
+        !termino ||
+        normalizar(a.nombre).includes(termino) ||
+        normalizar(categoriaDe(a)).includes(termino)
+    ))
+
+    const ordenados = [...filtrados].sort((a, b) => {
         let va, vb
 
         if (orden.campo === 'nombre') { va = a.nombre; vb = b.nombre }
@@ -83,6 +94,19 @@ function Articulos({ articulos, categorias }) {
                     </Button>
                     <Button variant="contained" onClick={abrirNuevo}>Nuevo artículo</Button>
                 </Box>
+            </Box>
+
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap', mb: 2 }}>
+                <Buscador
+                    valor={busqueda}
+                    onChange={setBusqueda}
+                    placeholder="Buscar por nombre o categoría..."
+                />
+                {termino && (
+                    <Typography variant="body2" color="text.secondary">
+                        {filtrados.length} artículo{filtrados.length === 1 ? '' : 's'}
+                    </Typography>
+                )}
             </Box>
 
             <ArticuloDialog
@@ -138,6 +162,16 @@ function Articulos({ articulos, categorias }) {
                                 </TableCell>
                             </TableRow>
                         ))}
+
+                        {ordenados.length === 0 && (
+                            <TableRow>
+                                <TableCell colSpan={5} align="center" sx={{ py: 4, color: 'text.secondary' }}>
+                                    {termino
+                                        ? `No se encontraron artículos para "${busqueda.trim()}".`
+                                        : 'Todavía no hay artículos cargados.'}
+                                </TableCell>
+                            </TableRow>
+                        )}
                     </TableBody>
                 </Table>
             </TableContainer>

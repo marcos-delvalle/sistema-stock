@@ -1,15 +1,58 @@
-import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Chip, Typography } from '@mui/material'
+import {
+    Box, Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
+    Paper, Chip, Typography,
+} from '@mui/material'
+import { useState } from 'react'
 import { formatearFecha } from '../utils/fecha'
+import Buscador from '../components/Buscador'
+import { normalizar } from '../utils/texto'
 
 function Historial({ movimientos, articulos, oficinas }) {
 
-    const ordenados = [...movimientos].sort(
+    const [busqueda, setBusqueda] = useState('')
+
+    const termino = normalizar(busqueda)
+
+    const filtrados = movimientos.filter((m) => {
+        if (!termino) return true
+
+        const articuloNombre = m.articulo_nombre || articulos.find((a) => a.id === m.articulo_id)?.nombre || ''
+        const oficinaNombre = m.oficina_nombre || oficinas.find((o) => o.id === m.oficina_id)?.nombre || ''
+        const tipoTexto = m.tipo === 'entrada' ? 'entrada' : 'salida'
+
+        return [articuloNombre, oficinaNombre, tipoTexto, String(m.fecha), formatearFecha(m.fecha)]
+            .some((texto) => normalizar(texto).includes(termino))
+    })
+
+    const ordenados = [...filtrados].sort(
         (a, b) => String(b.fecha).localeCompare(String(a.fecha)) || b.id - a.id
     )
 
     return (
         <>
-            <Typography variant="h4" sx={{ mb: 2 }}>Historial</Typography>
+            <Box
+                sx={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    gap: 2,
+                    flexWrap: 'wrap',
+                    mb: 2,
+                }}
+            >
+                <Typography variant="h4">Historial</Typography>
+                <Buscador
+                    valor={busqueda}
+                    onChange={setBusqueda}
+                    placeholder="Buscar por artículo, oficina, tipo o fecha..."
+                />
+            </Box>
+
+            {termino && (
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                    {filtrados.length} movimiento{filtrados.length === 1 ? '' : 's'}
+                </Typography>
+            )}
 
             <TableContainer component={Paper}>
                 <Table>
@@ -41,6 +84,16 @@ function Historial({ movimientos, articulos, oficinas }) {
                                 </TableCell>
                             </TableRow>
                         ))}
+
+                        {ordenados.length === 0 && (
+                            <TableRow>
+                                <TableCell colSpan={5} align="center" sx={{ py: 4, color: 'text.secondary' }}>
+                                    {termino
+                                        ? `No se encontraron movimientos para "${busqueda.trim()}".`
+                                        : 'Todavía no hay movimientos registrados.'}
+                                </TableCell>
+                            </TableRow>
+                        )}
                     </TableBody>
                 </Table>
             </TableContainer>

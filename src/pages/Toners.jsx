@@ -5,16 +5,30 @@ import {
 import { Edit, Print } from '@mui/icons-material'
 import { useState } from 'react'
 import TonerDialog from '../components/TonerDialog'
+import Buscador from '../components/Buscador'
+import { normalizar } from '../utils/texto'
 
 function Toners({ articulos, modelos, unidades, categorias }) {
 
     const [tonerEditando, setTonerEditando] = useState(null)
     const [dialogoAbierto, setDialogoAbierto] = useState(false)
     const [versionDialogo, setVersionDialogo] = useState(0)
+    const [busqueda, setBusqueda] = useState('')
 
     // Buscamos el id de la categoría "Tóner" por nombre (no por número mágico)
     const catToner = categorias.find((c) => c.nombre === 'Tóner')
     const toners = articulos.filter((a) => a.categoria_id === catToner?.id)
+
+    const termino = normalizar(busqueda)
+
+    const filtrados = toners.filter((t) => {
+        if (!termino) return true
+        if (normalizar(t.nombre).includes(termino)) return true
+
+        return modelos
+            .filter((m) => m.articulo_id === t.id)
+            .some((m) => normalizar(`${m.marca} ${m.modelo}`).includes(termino))
+    })
 
     function abrirNuevo() {
         setTonerEditando(null)
@@ -35,6 +49,19 @@ function Toners({ articulos, modelos, unidades, categorias }) {
                 <Button variant="contained" onClick={abrirNuevo}>Nuevo tóner</Button>
             </Box>
 
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap', mb: 2 }}>
+                <Buscador
+                    valor={busqueda}
+                    onChange={setBusqueda}
+                    placeholder="Buscar por tóner o impresora compatible..."
+                />
+                {termino && (
+                    <Typography variant="body2" color="text.secondary">
+                        {filtrados.length} tóner{filtrados.length === 1 ? '' : 'es'}
+                    </Typography>
+                )}
+            </Box>
+
             <TonerDialog
                 key={`${tonerEditando?.id ?? 'nuevo-toner'}-${versionDialogo}`}
                 abierto={dialogoAbierto}
@@ -46,7 +73,7 @@ function Toners({ articulos, modelos, unidades, categorias }) {
             />
 
             <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, alignItems: 'stretch' }}>
-                {toners.map((t) => {
+                {filtrados.map((t) => {
                     const modelosCompatibles = modelos.filter((m) => m.articulo_id === t.id)
 
                     const instaladas = unidades.filter((u) =>
@@ -150,6 +177,12 @@ function Toners({ articulos, modelos, unidades, categorias }) {
                 {toners.length === 0 && (
                     <Typography color="text.secondary" sx={{ py: 4 }}>
                         Todavía no hay tóners cargados.
+                    </Typography>
+                )}
+
+                {toners.length > 0 && filtrados.length === 0 && (
+                    <Typography color="text.secondary" sx={{ py: 4 }}>
+                        No se encontraron tóners para "{busqueda.trim()}".
                     </Typography>
                 )}
             </Box>

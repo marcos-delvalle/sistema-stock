@@ -6,6 +6,8 @@ import { Business } from '@mui/icons-material'
 import { useState } from 'react'
 import OficinasAsignadasDialog from '../components/OficinasAsignadasDialog'
 import CrearImpresoraDialog from '../components/CrearImpresoraDialog'
+import Buscador from '../components/Buscador'
+import { normalizar } from '../utils/texto'
 
 function Impresoras({ modelos, unidades, oficinas, articulos, categorias }) {
 
@@ -13,6 +15,7 @@ function Impresoras({ modelos, unidades, oficinas, articulos, categorias }) {
     const [modeloSeleccionado, setModeloSeleccionado] = useState(null)
     const [dialogoVer, setDialogoVer] = useState(false)
     const [orden, setOrden] = useState({ campo: 'marca', dir: 'asc' })
+    const [busqueda, setBusqueda] = useState('')
 
     function abrirModelo(m) {
         setModeloSeleccionado(m)
@@ -34,7 +37,16 @@ function Impresoras({ modelos, unidades, oficinas, articulos, categorias }) {
         }))
     }
 
-    const ordenados = [...modelos].sort((a, b) => {
+    const termino = normalizar(busqueda)
+
+    const filtrados = modelos.filter((m) => (
+        !termino ||
+        normalizar(m.marca).includes(termino) ||
+        normalizar(m.modelo).includes(termino) ||
+        normalizar(tonerDe(m)).includes(termino)
+    ))
+
+    const ordenados = [...filtrados].sort((a, b) => {
         let va, vb
 
         if (orden.campo === 'marca') { va = a.marca; vb = b.marca }
@@ -73,6 +85,19 @@ function Impresoras({ modelos, unidades, oficinas, articulos, categorias }) {
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
                 <Typography variant="h4">Impresoras</Typography>
                 <Button variant="contained" onClick={() => setDialogoCrear(true)}>Nueva impresora</Button>
+            </Box>
+
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap', mb: 2 }}>
+                <Buscador
+                    valor={busqueda}
+                    onChange={setBusqueda}
+                    placeholder="Buscar por marca, modelo o tóner..."
+                />
+                {termino && (
+                    <Typography variant="body2" color="text.secondary">
+                        {filtrados.length} impresora{filtrados.length === 1 ? '' : 's'}
+                    </Typography>
+                )}
             </Box>
 
             <CrearImpresoraDialog
@@ -121,11 +146,13 @@ function Impresoras({ modelos, unidades, oficinas, articulos, categorias }) {
                             </TableRow>
                         ))}
 
-                        {modelos.length === 0 && (
+                        {ordenados.length === 0 && (
                             <TableRow>
                                 <TableCell colSpan={5} align="center">
                                     <Typography variant="body2" color="text.secondary" sx={{ py: 3 }}>
-                                        No hay impresoras cargadas
+                                        {termino
+                                            ? `No se encontraron impresoras para "${busqueda.trim()}".`
+                                            : 'No hay impresoras cargadas'}
                                     </Typography>
                                 </TableCell>
                             </TableRow>
