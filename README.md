@@ -354,9 +354,6 @@ sirve. En ese caso ejecutar `npm run build`.
 el sistema se detiene. Para que arranque solo al prender la PC y se recupere si
 se cae, se instala como servicio con **NSSM**.
 
-> Si preferís no instalar un servicio, la sección
-> [8.2](#82-iniciar-y-reiniciar-sin-consola) explica los lanzadores de doble clic.
-
 **Requisitos:** permisos de administrador (la ventana de UAC), Node.js instalado
 para todos los usuarios y el proyecto en una carpeta simple, por ejemplo
 `C:\sistema-stock`. Evitá clonarlo dentro del perfil de un usuario
@@ -427,46 +424,6 @@ para todos los usuarios y el proyecto en una carpeta simple, por ejemplo
 > El servicio queda configurado con inicio automático y reinicio ante fallos.
 > Si se cambia la carpeta del proyecto, hay que actualizar `AppDirectory` y los
 > paths de los logs.
-
-### 8.2 Iniciar y reiniciar sin consola
-
-Si no se usa NSSM, en la raíz del proyecto hay tres lanzadores para hacer doble
-clic. **No abren ninguna consola**:
-
-| Lanzador | Qué hace |
-|---|---|
-| `Iniciar Sistema Stock.vbs` | Arranca PostgreSQL y la API, y abre el navegador. |
-| `Reiniciar Sistema Stock.vbs` | Reinicia solo la API (la base queda corriendo). |
-| `Detener Sistema Stock.vbs` | Apaga la API (la base queda corriendo). |
-
-> Si Windows muestra **"la directiva de grupo bloquea este programa"** al abrir
-> un `.vbs`, usá los `.bat` equivalentes de la misma carpeta. Hacen lo mismo y
-> no dependen de Windows Script Host (pueden mostrar una consola por un
-> instante; se cierra sola).
-
-Requisitos:
-
-- Ejecutarlos en la PC donde está instalado el sistema, con **la misma cuenta de
-  Windows** con la que se instaló (la base portable vive en su perfil).
-- Node.js en el `PATH`, `node_modules` instalado y `server\.env` configurado.
-- Si falta `dist\`, el lanzador compila el front automáticamente.
-
-Si Windows bloquea los archivos `.vbs`, se puede ejecutar la misma lógica desde
-PowerShell:
-
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File .\server\scripts\control-local.ps1 start
-powershell -NoProfile -ExecutionPolicy Bypass -File .\server\scripts\control-local.ps1 restart
-powershell -NoProfile -ExecutionPolicy Bypass -File .\server\scripts\control-local.ps1 stop
-powershell -NoProfile -ExecutionPolicy Bypass -File .\server\scripts\control-local.ps1 status
-```
-
-Los registros quedan en `logs\control.log`, `logs\api.log` y
-`logs\api.err.log`.
-
-> Limitación: sin servicio, si se cierra sesión, se reinicia la PC o se cae la
-> API, hay que volver a hacer doble clic en **Iniciar Sistema Stock**. Para
-> arranque automático al prender la PC, usar NSSM (sección 8.1).
 
 ---
 
@@ -840,13 +797,10 @@ La API escribe en la consola:
 ```
 
 Si se ejecuta con `npm start` en una ventana de PowerShell, esos mensajes quedan
-ahí. Con el servicio NSSM o con los lanzadores de la sección 8.2, la salida se
-guarda en:
+ahí. Con el servicio NSSM, la salida se guarda en:
 
 - `logs\api.log`: mensajes normales y peticiones.
 - `logs\api.err.log`: errores.
-- `logs\control.log`: qué lanzador se ejecutó y qué pasó.
-- `logs\api.prev.log` y `logs\api.err.prev.log`: salida del arranque anterior.
 
 Esos archivos están ignorados por Git. Revisar `api.err.log` es el primer paso
 cuando el servicio no arranca.
@@ -880,12 +834,9 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\actualizar.ps1
 ```
 
 No hace falta abrir toda la consola como administrador: el script hace `git pull`,
-`npm install` y `npm run build` con tu usuario. Al final reinicia el sistema:
-
-- si el servicio `SistemaStock` de NSSM existe, lo reinicia (pide UAC solo en
-  ese paso);
-- si no hay servicio, usa el lanzador local de la sección 8.2;
-- si no encuentra ninguno, avisa y deja el reinicio pendiente.
+`npm install` y `npm run build` con tu usuario. Si el servicio `SistemaStock` de
+NSSM está instalado, lo reinicia y pide UAC solo en ese paso; si no, avisa y deja
+el reinicio pendiente.
 
 El script `actualizar.ps1` hace, en orden:
 
@@ -894,7 +845,7 @@ El script `actualizar.ps1` hace, en orden:
 3. `npm run db:start` (arranca PostgreSQL si no está corriendo).
 4. `npm run db:migrate`.
 5. `npm run build`.
-6. Reinicia el sistema (NSSM o lanzador local).
+6. Reinicia el servicio `SistemaStock` con NSSM (si está instalado).
 
 Opciones útiles:
 
@@ -916,8 +867,8 @@ npm run db:migrate
 npm run build
 ```
 
-y después doble clic en `Reiniciar Sistema Stock` (o `nssm restart SistemaStock`
-si se usa el servicio).
+Después reiniciá el sistema para que tome el código nuevo (`nssm restart
+SistemaStock` si usás el servicio).
 
 > `db:migrate` es seguro para las tablas actuales porque usa `IF NOT EXISTS`.
 > Si en el futuro se agregan columnas a tablas existentes, habrá que crear
@@ -987,7 +938,7 @@ si se usa el servicio).
 - [x] Diálogos de alta/edición guardando contra la API.
 - [x] Gestión de categorías desde la interfaz.
 - [x] Servido del front compilado en producción.
-- [x] Script `actualizar.ps1` y lanzadores de inicio/reinicio sin consola.
+- [x] Script `actualizar.ps1` para actualizar en producción.
 - [ ] Servicio de Windows con NSSM (opcional, para arranque automático).
 - [x] Scripts de PostgreSQL portable y documentación.
 
@@ -1047,11 +998,7 @@ Sugerencias de mensajes:
 | `src/pages/Login.jsx` | Pantalla de ingreso. |
 | `src/pages/` | Dashboard, Tóners, Impresoras, Artículos, Dependencias, Historial. |
 | `src/components/` | Diálogos de alta/edición, categorías y detalle de oficina. |
-| `actualizar.ps1` | Actualización en producción: pull, install, db:start, migrate, build y reinicio (NSSM o lanzador local). |
-| `Iniciar Sistema Stock.vbs` | Lanzador de doble clic: arranca la base y la API. |
-| `Reiniciar Sistema Stock.vbs` | Lanzador de doble clic: reinicia la API. |
-| `Detener Sistema Stock.vbs` | Lanzador de doble clic: detiene la API. |
-| `Iniciar Sistema Stock.bat` y equivalentes | Alternativa a los `.vbs` si la directiva de grupo bloquea Windows Script Host. |
+| `actualizar.ps1` | Actualización en producción: pull, install, db:start, migrate, build y reinicio del servicio (si existe). |
 | `server/index.js` | Arranque en `0.0.0.0` y apagado ordenado. |
 | `server/app.js` | Middlewares, rutas y servido de `dist/`. |
 | `server/db/esquema.sql` | Tablas, CHECKs, FKs, índices y categorías base. |
@@ -1060,7 +1007,6 @@ Sugerencias de mensajes:
 | `server/middleware/auth.js` | Verificación de la cookie JWT. |
 | `server/lib/transaccion.js` | `BEGIN / COMMIT / ROLLBACK`. |
 | `server/scripts/postgres-local.ps1` | Arranque/detención del PostgreSQL portable. |
-| `server/scripts/control-local.ps1` | Inicio, reinicio y detención sin consola (lo usan los lanzadores). |
 | `server/.env.example` | Plantilla de configuración (sin credenciales reales). |
 | `server/README.md` | Detalle técnico del backend y de la API. |
 | `vite.config.js` | Proxy `/api` → `http://localhost:3000`. |
@@ -1077,8 +1023,7 @@ Sugerencias de mensajes:
 6. `Copy-Item server/.env.example server/.env` y completar credenciales.
 7. `npm run db:migrate` y `npm run db:check`.
 8. `npm run build`.
-9. Elegir cómo arrancarlo: lanzadores de doble clic (ver
-   [8.2](#82-iniciar-y-reiniciar-sin-consola)) o servicio NSSM (ver
+9. Arrancar el sistema con `npm start` o instalar el servicio NSSM (ver
    [8.1](#81-arranque-automático-como-servicio-de-windows-nssm)).
 10. Abrir el puerto 3000 en el firewall (red privada) y reservar la IP.
 11. Probar `http://IP:3000/api/salud` desde otra PC.

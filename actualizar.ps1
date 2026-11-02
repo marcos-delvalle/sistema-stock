@@ -37,7 +37,6 @@ Ejecutar 'npm.cmd' @('run', 'build')
 
 if ($SinReiniciar) {
     Write-Host 'Reinicio omitido (-SinReiniciar).' -ForegroundColor Yellow
-    Write-Host 'Reinicia con "Reiniciar Sistema Stock" o a mano.' -ForegroundColor Yellow
 } else {
     $nssm = (Get-Command nssm -ErrorAction SilentlyContinue).Source
 
@@ -68,20 +67,9 @@ if ($SinReiniciar) {
         }
 
         Write-Host "Servicio $NombreServicio reiniciado." -ForegroundColor Green
-    } elseif (Test-Path (Join-Path $raiz 'server\scripts\control-local.ps1')) {
-        Write-Host 'Reiniciando el sistema con el lanzador local...' -ForegroundColor Cyan
-
-        & powershell.exe -NoProfile -ExecutionPolicy Bypass `
-            -File (Join-Path $raiz 'server\scripts\control-local.ps1') restart -SinNavegador
-
-        if ($LASTEXITCODE -eq 0) {
-            Write-Host 'Sistema reiniciado.' -ForegroundColor Green
-        } else {
-            Write-Host 'No se pudo reiniciar automaticamente. Usa "Reiniciar Sistema Stock".' -ForegroundColor Yellow
-        }
     } else {
-        Write-Host 'No hay servicio NSSM ni lanzador local: el reinicio queda pendiente.' -ForegroundColor Yellow
-        Write-Host 'Reinicia el sistema con "Reiniciar Sistema Stock" o a mano.' -ForegroundColor Yellow
+        Write-Host 'No hay servicio NSSM registrado: el reinicio queda pendiente.' -ForegroundColor Yellow
+        Write-Host 'Reinicia el sistema para que tome los cambios.' -ForegroundColor Yellow
     }
 }
 
