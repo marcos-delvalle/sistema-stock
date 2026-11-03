@@ -46,7 +46,7 @@ function Login() {
                 component="form"
                 onSubmit={enviar}
                 elevation={4}
-                sx={{ p: 4, width: '100%', maxWidth: 400, borderRadius: 3 }}
+                sx={{ p: { xs: 2.5, sm: 4 }, width: '100%', maxWidth: 400, borderRadius: 3 }}
             >
                 <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', mb: 3 }}>
                     <Avatar sx={{ bgcolor: 'primary.main', mb: 1.5 }}>

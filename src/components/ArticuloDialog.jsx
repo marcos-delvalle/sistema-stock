@@ -97,10 +97,10 @@ function ArticuloDialog({ abierto, onCerrar, categorias, articulo, categoriaIdFi
     }
 
     return (
-        <Dialog open={abierto} onClose={guardando ? undefined : onCerrar}>
+        <Dialog open={abierto} onClose={guardando ? undefined : onCerrar} maxWidth="xs" fullWidth>
             <DialogTitle>{editando ? 'Editar artículo' : 'Nuevo artículo'}</DialogTitle>
             <DialogContent>
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1, minWidth: 320 }}>
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
                     {error && <Alert severity="error">{error}</Alert>}
 
                     <TextField

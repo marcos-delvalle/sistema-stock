@@ -8,6 +8,7 @@ import {
     SwapHoriz, TrendingUp, WarningAmber,
 } from '@mui/icons-material'
 import { useNavigate } from 'react-router-dom'
+import EncabezadoPagina from '../components/EncabezadoPagina'
 import { formatearFecha } from '../utils/fecha'
 
 const MESES_CORTOS = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic']
@@ -88,7 +89,7 @@ function TarjetaKpi({ titulo, valor, detalle, Icono, color, onClick }) {
 
 function EncabezadoPanel({ Icono, titulo, subtitulo, accion, colorIcono = 'primary' }) {
     return (
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 1, mb: 1.5 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 1, flexWrap: 'wrap', mb: 1.5 }}>
             <Box sx={{ display: 'flex', gap: 1, alignItems: 'flex-start' }}>
                 <Icono color={colorIcono} fontSize="small" sx={{ mt: 0.3 }} />
                 <Box>
@@ -216,19 +217,17 @@ function Dashboard({
 
     return (
         <>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: 2, flexWrap: 'wrap', mb: 2 }}>
-                <Box>
-                    <Typography variant="h4">Dashboard</Typography>
-                    <Typography variant="body2" color="text.secondary">
-                        Resumen general del stock y del parque de impresoras.
-                    </Typography>
-                </Box>
-                <Chip
-                    icon={<CalendarMonth />}
-                    variant="outlined"
-                    label={hoy.toLocaleDateString('es-AR', { day: '2-digit', month: 'long', year: 'numeric' })}
-                />
-            </Box>
+            <EncabezadoPagina
+                titulo="Dashboard"
+                subtitulo="Resumen general del stock y del parque de impresoras."
+                acciones={
+                    <Chip
+                        icon={<CalendarMonth />}
+                        variant="outlined"
+                        label={hoy.toLocaleDateString('es-AR', { day: '2-digit', month: 'long', year: 'numeric' })}
+                    />
+                }
+            />
 
             <Box
                 sx={{
@@ -427,8 +426,86 @@ function Dashboard({
                             Todavía no hay movimientos registrados.
                         </Typography>
                     ) : (
-                        <TableContainer>
-                            <Table size="small">
+                        <>
+                            <Box
+                                sx={{
+                                    display: { xs: 'flex', sm: 'none' },
+                                    flexDirection: 'column',
+                                }}
+                            >
+                                {recientes.map((m, indice) => (
+                                    <Box
+                                        key={m.id}
+                                        onClick={() => navigate('/historial')}
+                                        sx={{
+                                            py: 1.25,
+                                            borderTop: indice === 0 ? 0 : '1px solid',
+                                            borderColor: 'divider',
+                                            cursor: 'pointer',
+                                        }}
+                                    >
+                                        <Box
+                                            sx={{
+                                                display: 'flex',
+                                                justifyContent: 'space-between',
+                                                alignItems: 'center',
+                                                gap: 1,
+                                            }}
+                                        >
+                                            <Typography variant="body2" color="text.secondary">
+                                                {formatearFecha(m.fecha)}
+                                            </Typography>
+                                            <Chip
+                                                size="small"
+                                                label={m.tipo === 'entrada' ? 'Entrada' : 'Salida'}
+                                                color={m.tipo === 'entrada' ? 'success' : 'primary'}
+                                            />
+                                        </Box>
+
+                                        <Typography
+                                            variant="body2"
+                                            sx={{ fontWeight: 600, mt: 0.5 }}
+                                        >
+                                            {m.articulo_nombre || articulos.find((a) => a.id === m.articulo_id)?.nombre || '—'}
+                                        </Typography>
+
+                                        <Box
+                                            sx={{
+                                                display: 'flex',
+                                                justifyContent: 'space-between',
+                                                alignItems: 'center',
+                                                gap: 1,
+                                                mt: 0.5,
+                                            }}
+                                        >
+                                            <Typography variant="body2" color="text.secondary" noWrap>
+                                                {destinoDe(m)}
+                                            </Typography>
+                                            <Typography variant="body2" sx={{ whiteSpace: 'nowrap' }}>
+                                                Cant.: {m.cantidad}
+                                            </Typography>
+                                        </Box>
+
+                                        {m.afecta_stock === false && (
+                                            <Chip
+                                                size="small"
+                                                variant="outlined"
+                                                label="No afecta stock"
+                                                sx={{ mt: 0.75 }}
+                                            />
+                                        )}
+                                    </Box>
+                                ))}
+                            </Box>
+
+                            <TableContainer sx={{ display: { xs: 'none', sm: 'block' } }}>
+                                <Table
+                                    size="small"
+                                    sx={{
+                                        minWidth: 520,
+                                        '& .MuiTableCell-root': { px: { xs: 1, sm: 2 } },
+                                    }}
+                                >
                                 <TableHead>
                                     <TableRow>
                                         <TableCell>Fecha</TableCell>
@@ -476,7 +553,8 @@ function Dashboard({
                                     ))}
                                 </TableBody>
                             </Table>
-                        </TableContainer>
+                            </TableContainer>
+                        </>
                     )}
                 </Paper>
 

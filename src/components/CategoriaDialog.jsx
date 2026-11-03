@@ -148,7 +148,14 @@ function CategoriaDialog({ abierto, onCerrar, categorias, articulos }) {
             <DialogContent>
                 {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
 
-                <Box sx={{ display: 'flex', gap: 1, alignItems: 'flex-start' }}>
+                <Box
+                    sx={{
+                        display: 'flex',
+                        flexDirection: { xs: 'column', sm: 'row' },
+                        gap: 1,
+                        alignItems: { xs: 'stretch', sm: 'flex-start' },
+                    }}
+                >
                     <TextField
                         label="Nueva categoría"
                         value={nombreNuevo}
@@ -167,7 +174,7 @@ function CategoriaDialog({ abierto, onCerrar, categorias, articulos }) {
                         startIcon={<Add />}
                         onClick={crear}
                         disabled={guardando}
-                        sx={{ whiteSpace: 'nowrap' }}
+                        sx={{ whiteSpace: 'nowrap', width: { xs: '100%', sm: 'auto' } }}
                     >
                         Agregar
                     </Button>
@@ -255,7 +262,7 @@ function CategoriaDialog({ abierto, onCerrar, categorias, articulos }) {
                                             size="small"
                                             autoFocus
                                             fullWidth
-                                            sx={{ mr: 12 }}
+                                            sx={{ mr: { xs: 10, sm: 12 } }}
                                         />
                                     ) : (
                                         <ListItemText

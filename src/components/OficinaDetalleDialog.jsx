@@ -1,7 +1,7 @@
 import {
     Box, Button, Chip, Dialog, DialogActions, DialogContent, DialogTitle,
-    IconButton, Tab, Table, TableBody, TableCell, TableContainer, TableHead,
-    TableRow, Tabs, Tooltip, Typography,
+    IconButton, Paper, Tab, Table, TableBody, TableCell, TableContainer,
+    TableHead, TableRow, Tabs, Tooltip, Typography, useMediaQuery,
 } from '@mui/material'
 import { Add, Edit, OpenInNew } from '@mui/icons-material'
 import { useState } from 'react'
@@ -18,6 +18,7 @@ function OficinaDetalleDialog({
     oficinas, articulos, movimientos,
 }) {
     const [tab, setTab] = useState(0)
+    const esMovil = useMediaQuery('(max-width:599.95px)')
 
     // undefined = formulario cerrado · null = creando · objeto = editando
     const [unidadEditando, setUnidadEditando] = useState(undefined)
@@ -32,7 +33,7 @@ function OficinaDetalleDialog({
 
     return (
         <>
-            <Dialog open={abierto} onClose={onCerrar} maxWidth="md" fullWidth>
+            <Dialog open={abierto} onClose={onCerrar} maxWidth="md" fullWidth fullScreen={esMovil}>
                 <DialogTitle>
                     {oficina.nombre}
                     <Typography variant="body2" color="text.secondary">
@@ -52,13 +53,23 @@ function OficinaDetalleDialog({
 
                     {tab === 0 && (
                         <Box sx={{ mt: 2 }}>
-                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                            <Box
+                                sx={{
+                                    display: 'flex',
+                                    flexDirection: { xs: 'column', sm: 'row' },
+                                    justifyContent: 'space-between',
+                                    alignItems: { xs: 'stretch', sm: 'center' },
+                                    gap: 1,
+                                    mb: 1,
+                                }}
+                            >
                                 <Typography variant="subtitle1">Impresoras asignadas</Typography>
                                 <Button
                                     size="small"
                                     variant="outlined"
                                     startIcon={<Add />}
                                     onClick={() => setUnidadEditando(null)}
+                                    sx={{ width: { xs: '100%', sm: 'auto' } }}
                                 >
                                     Agregar impresora
                                 </Button>
@@ -69,65 +80,155 @@ function OficinaDetalleDialog({
                                     Esta oficina todavía no tiene impresoras asignadas.
                                 </Typography>
                             ) : (
-                                <TableContainer>
-                                    <Table size="small">
-                                        <TableHead>
-                                            <TableRow>
-                                                <TableCell>Modelo</TableCell>
-                                                <TableCell>Nombre</TableCell>
-                                                <TableCell>IP</TableCell>
-                                                <TableCell>Estado</TableCell>
-                                                <TableCell align="right">Acciones</TableCell>
-                                            </TableRow>
-                                        </TableHead>
-                                        <TableBody>
-                                            {asignadas.map((u) => {
-                                                const modelo = modelos.find((m) => m.id === u.modelo_id)
+                                <>
+                                    <Box
+                                        sx={{
+                                            display: { xs: 'flex', sm: 'none' },
+                                            flexDirection: 'column',
+                                            gap: 1.5,
+                                        }}
+                                    >
+                                        {asignadas.map((u) => {
+                                            const modelo = modelos.find((m) => m.id === u.modelo_id)
 
-                                                return (
-                                                    <TableRow key={u.id}>
-                                                        <TableCell>
-                                                            {modelo ? `${modelo.marca} ${modelo.modelo}` : '—'}
-                                                        </TableCell>
-                                                        <TableCell>{u.nombre || '—'}</TableCell>
-                                                        <TableCell>
-                                                            {u.ip ? (
-                                                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                                                                    {u.ip}
-                                                                    <Tooltip title="Abrir en el navegador">
-                                                                        <IconButton
-                                                                            size="small"
-                                                                            component="a"
-                                                                            href={u.ip.startsWith('http') ? u.ip : `http://${u.ip}`}
-                                                                            target="_blank"
-                                                                            rel="noopener noreferrer"
-                                                                        >
-                                                                            <OpenInNew fontSize="small" />
-                                                                        </IconButton>
-                                                                    </Tooltip>
-                                                                </Box>
-                                                            ) : '—'}
-                                                        </TableCell>
-                                                        <TableCell>
-                                                            <Chip
+                                            return (
+                                                <Paper
+                                                    key={u.id}
+                                                    variant="outlined"
+                                                    sx={{ p: 1.5, borderRadius: 2 }}
+                                                >
+                                                    <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
+                                                        <Box sx={{ flexGrow: 1, minWidth: 0 }}>
+                                                            <Typography
+                                                                variant="subtitle2"
+                                                                sx={{ fontWeight: 600 }}
+                                                            >
+                                                                {modelo ? `${modelo.marca} ${modelo.modelo}` : '—'}
+                                                            </Typography>
+                                                            <Typography variant="body2" color="text.secondary">
+                                                                {u.nombre || '—'}
+                                                            </Typography>
+                                                        </Box>
+                                                        <Tooltip title="Editar unidad">
+                                                            <IconButton
                                                                 size="small"
-                                                                label={u.estado}
-                                                                color={u.estado === 'activa' ? 'success' : 'default'}
-                                                            />
-                                                        </TableCell>
-                                                        <TableCell align="right">
-                                                            <Tooltip title="Editar unidad">
-                                                                <IconButton size="small" onClick={() => setUnidadEditando(u)}>
-                                                                    <Edit fontSize="small" />
-                                                                </IconButton>
-                                                            </Tooltip>
-                                                        </TableCell>
-                                                    </TableRow>
-                                                )
-                                            })}
-                                        </TableBody>
-                                    </Table>
-                                </TableContainer>
+                                                                onClick={() => setUnidadEditando(u)}
+                                                                aria-label="Editar unidad"
+                                                            >
+                                                                <Edit fontSize="small" />
+                                                            </IconButton>
+                                                        </Tooltip>
+                                                    </Box>
+
+                                                    <Box
+                                                        sx={{
+                                                            display: 'flex',
+                                                            alignItems: 'center',
+                                                            gap: 0.75,
+                                                            flexWrap: 'wrap',
+                                                            mt: 1,
+                                                        }}
+                                                    >
+                                                        <Chip
+                                                            size="small"
+                                                            label={u.estado}
+                                                            color={u.estado === 'activa' ? 'success' : 'default'}
+                                                        />
+                                                        {u.ip ? (
+                                                            <>
+                                                                <Typography variant="body2" color="text.secondary">
+                                                                    {u.ip}
+                                                                </Typography>
+                                                                <Tooltip title="Abrir en el navegador">
+                                                                    <IconButton
+                                                                        size="small"
+                                                                        component="a"
+                                                                        href={u.ip.startsWith('http') ? u.ip : `http://${u.ip}`}
+                                                                        target="_blank"
+                                                                        rel="noopener noreferrer"
+                                                                        aria-label={`Abrir ${u.ip}`}
+                                                                    >
+                                                                        <OpenInNew fontSize="small" />
+                                                                    </IconButton>
+                                                                </Tooltip>
+                                                            </>
+                                                        ) : (
+                                                            <Typography variant="body2" color="text.secondary">
+                                                                Sin IP
+                                                            </Typography>
+                                                        )}
+                                                    </Box>
+                                                </Paper>
+                                            )
+                                        })}
+                                    </Box>
+
+                                    <TableContainer sx={{ display: { xs: 'none', sm: 'block' } }}>
+                                        <Table
+                                            size="small"
+                                            sx={{
+                                                minWidth: 520,
+                                                '& .MuiTableCell-root': { px: { xs: 1, sm: 2 } },
+                                            }}
+                                        >
+                                            <TableHead>
+                                                <TableRow>
+                                                    <TableCell>Modelo</TableCell>
+                                                    <TableCell>Nombre</TableCell>
+                                                    <TableCell>IP</TableCell>
+                                                    <TableCell>Estado</TableCell>
+                                                    <TableCell align="right">Acciones</TableCell>
+                                                </TableRow>
+                                            </TableHead>
+                                            <TableBody>
+                                                {asignadas.map((u) => {
+                                                    const modelo = modelos.find((m) => m.id === u.modelo_id)
+
+                                                    return (
+                                                        <TableRow key={u.id}>
+                                                            <TableCell>
+                                                                {modelo ? `${modelo.marca} ${modelo.modelo}` : '—'}
+                                                            </TableCell>
+                                                            <TableCell>{u.nombre || '—'}</TableCell>
+                                                            <TableCell>
+                                                                {u.ip ? (
+                                                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                                                                        {u.ip}
+                                                                        <Tooltip title="Abrir en el navegador">
+                                                                            <IconButton
+                                                                                size="small"
+                                                                                component="a"
+                                                                                href={u.ip.startsWith('http') ? u.ip : `http://${u.ip}`}
+                                                                                target="_blank"
+                                                                                rel="noopener noreferrer"
+                                                                            >
+                                                                                <OpenInNew fontSize="small" />
+                                                                            </IconButton>
+                                                                        </Tooltip>
+                                                                    </Box>
+                                                                ) : '—'}
+                                                            </TableCell>
+                                                            <TableCell>
+                                                                <Chip
+                                                                    size="small"
+                                                                    label={u.estado}
+                                                                    color={u.estado === 'activa' ? 'success' : 'default'}
+                                                                />
+                                                            </TableCell>
+                                                            <TableCell align="right">
+                                                                <Tooltip title="Editar unidad">
+                                                                    <IconButton size="small" onClick={() => setUnidadEditando(u)}>
+                                                                        <Edit fontSize="small" />
+                                                                    </IconButton>
+                                                                </Tooltip>
+                                                            </TableCell>
+                                                        </TableRow>
+                                                    )
+                                                })}
+                                            </TableBody>
+                                        </Table>
+                                    </TableContainer>
+                                </>
                             )}
                         </Box>
                     )}
@@ -144,7 +245,13 @@ function OficinaDetalleDialog({
                                 </Typography>
                             ) : (
                                 <TableContainer>
-                                    <Table size="small">
+                                    <Table
+                                        size="small"
+                                        sx={{
+                                            minWidth: 0,
+                                            '& .MuiTableCell-root': { px: { xs: 1, sm: 2 } },
+                                        }}
+                                    >
                                         <TableHead>
                                             <TableRow>
                                                 <TableCell>Fecha</TableCell>

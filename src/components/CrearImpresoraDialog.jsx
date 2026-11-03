@@ -77,10 +77,10 @@ function CrearImpresoraDialog({ abierto, onCerrar, articulos, modelos, categoria
     }
 
     return (
-        <Dialog open={abierto} onClose={guardando ? undefined : cerrar}>
+        <Dialog open={abierto} onClose={guardando ? undefined : cerrar} maxWidth="xs" fullWidth>
             <DialogTitle>Nueva impresora</DialogTitle>
             <DialogContent>
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1, minWidth: 320 }}>
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
                     {error && <Alert severity="error">{error}</Alert>}
 
                     <Autocomplete

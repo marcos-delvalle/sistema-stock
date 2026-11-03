@@ -1,12 +1,13 @@
 import {
-    Box, Button, IconButton, Paper, Table, TableBody, TableCell, TableContainer,
-    TableHead, TableRow, TableSortLabel, Tooltip, Typography,
+    Box, Button, Chip, IconButton, Paper, Table, TableBody, TableCell,
+    TableContainer, TableHead, TableRow, TableSortLabel, Tooltip, Typography,
 } from '@mui/material'
 import { Business } from '@mui/icons-material'
 import { useState } from 'react'
 import OficinasAsignadasDialog from '../components/OficinasAsignadasDialog'
 import CrearImpresoraDialog from '../components/CrearImpresoraDialog'
 import Buscador from '../components/Buscador'
+import EncabezadoPagina from '../components/EncabezadoPagina'
 import { normalizar } from '../utils/texto'
 
 function Impresoras({ modelos, unidades, oficinas, articulos, categorias }) {
@@ -82,10 +83,14 @@ function Impresoras({ modelos, unidades, oficinas, articulos, categorias }) {
 
     return (
         <>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                <Typography variant="h4">Impresoras</Typography>
-                <Button variant="contained" onClick={() => setDialogoCrear(true)}>Nueva impresora</Button>
-            </Box>
+            <EncabezadoPagina
+                titulo="Impresoras"
+                acciones={
+                    <Button variant="contained" onClick={() => setDialogoCrear(true)}>
+                        Nueva impresora
+                    </Button>
+                }
+            />
 
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap', mb: 2 }}>
                 <Buscador
@@ -108,58 +113,121 @@ function Impresoras({ modelos, unidades, oficinas, articulos, categorias }) {
                 categorias={categorias}
             />
 
-            <TableContainer component={Paper}>
-                <Table>
-                    <TableHead>
-                        <TableRow>
-                            {columna('marca', 'Marca')}
-                            {columna('modelo', 'Modelo')}
-                            {columna('toner', 'Tóner')}
-                            {columna('asignadas', 'Asignadas', 'right')}
-                            <TableCell align="right">Acciones</TableCell>
-                        </TableRow>
-                    </TableHead>
-                    <TableBody>
-                        {ordenados.map((m) => (
-                            <TableRow
-                                key={m.id}
-                                hover
-                                onClick={() => abrirModelo(m)}
-                                sx={{ cursor: 'pointer' }}
-                            >
-                                <TableCell>{m.marca}</TableCell>
-                                <TableCell>{m.modelo}</TableCell>
-                                <TableCell>{tonerDe(m)}</TableCell>
-                                <TableCell align="right">{asignadasDe(m)}</TableCell>
-                                <TableCell align="right">
-                                    <Tooltip title="Ver oficinas asignadas">
-                                        <IconButton
-                                            onClick={(e) => {
-                                                e.stopPropagation()
-                                                abrirModelo(m)
-                                            }}
-                                        >
-                                            <Business fontSize="small" />
-                                        </IconButton>
-                                    </Tooltip>
-                                </TableCell>
-                            </TableRow>
-                        ))}
+            {ordenados.length === 0 ? (
+                <Paper sx={{ p: 4, textAlign: 'center' }}>
+                    <Typography color="text.secondary">
+                        {termino
+                            ? `No se encontraron impresoras para "${busqueda.trim()}".`
+                            : 'No hay impresoras cargadas'}
+                    </Typography>
+                </Paper>
+            ) : (
+                <>
+                    <Box
+                        sx={{
+                            display: { xs: 'flex', sm: 'none' },
+                            flexDirection: 'column',
+                            gap: 1.5,
+                        }}
+                    >
+                        {ordenados.map((m) => {
+                            const asignadas = asignadasDe(m)
 
-                        {ordenados.length === 0 && (
+                            return (
+                                <Paper
+                                    key={m.id}
+                                    variant="outlined"
+                                    onClick={() => abrirModelo(m)}
+                                    sx={{ p: 2, borderRadius: 2, cursor: 'pointer' }}
+                                >
+                                    <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
+                                        <Box sx={{ flexGrow: 1, minWidth: 0 }}>
+                                            <Typography
+                                                variant="subtitle1"
+                                                sx={{ fontWeight: 600, lineHeight: 1.3 }}
+                                            >
+                                                {m.marca} {m.modelo}
+                                            </Typography>
+                                            <Typography variant="body2" color="text.secondary">
+                                                Tóner: {tonerDe(m)}
+                                            </Typography>
+                                        </Box>
+                                        <Tooltip title="Ver oficinas asignadas">
+                                            <IconButton
+                                                onClick={(e) => {
+                                                    e.stopPropagation()
+                                                    abrirModelo(m)
+                                                }}
+                                                aria-label={`Ver oficinas de ${m.marca} ${m.modelo}`}
+                                                sx={{ mt: -0.5, mr: -1 }}
+                                            >
+                                                <Business fontSize="small" />
+                                            </IconButton>
+                                        </Tooltip>
+                                    </Box>
+
+                                    <Chip
+                                        size="small"
+                                        label={`${asignadas} asignada${asignadas === 1 ? '' : 's'}`}
+                                        color={asignadas > 0 ? 'primary' : 'default'}
+                                        variant={asignadas > 0 ? 'filled' : 'outlined'}
+                                        sx={{ mt: 1.5 }}
+                                    />
+                                </Paper>
+                            )
+                        })}
+                    </Box>
+
+                    <TableContainer
+                        component={Paper}
+                        sx={{ display: { xs: 'none', sm: 'block' } }}
+                    >
+                        <Table
+                            sx={{
+                                minWidth: 520,
+                                '& .MuiTableCell-root': { px: { xs: 1.25, sm: 2 } },
+                            }}
+                        >
+                        <TableHead>
                             <TableRow>
-                                <TableCell colSpan={5} align="center">
-                                    <Typography variant="body2" color="text.secondary" sx={{ py: 3 }}>
-                                        {termino
-                                            ? `No se encontraron impresoras para "${busqueda.trim()}".`
-                                            : 'No hay impresoras cargadas'}
-                                    </Typography>
-                                </TableCell>
+                                {columna('marca', 'Marca')}
+                                {columna('modelo', 'Modelo')}
+                                {columna('toner', 'Tóner')}
+                                {columna('asignadas', 'Asignadas', 'right')}
+                                <TableCell align="right">Acciones</TableCell>
                             </TableRow>
-                        )}
-                    </TableBody>
-                </Table>
-            </TableContainer>
+                        </TableHead>
+                        <TableBody>
+                            {ordenados.map((m) => (
+                                <TableRow
+                                    key={m.id}
+                                    hover
+                                    onClick={() => abrirModelo(m)}
+                                    sx={{ cursor: 'pointer' }}
+                                >
+                                    <TableCell>{m.marca}</TableCell>
+                                    <TableCell>{m.modelo}</TableCell>
+                                    <TableCell>{tonerDe(m)}</TableCell>
+                                    <TableCell align="right">{asignadasDe(m)}</TableCell>
+                                    <TableCell align="right">
+                                        <Tooltip title="Ver oficinas asignadas">
+                                            <IconButton
+                                                onClick={(e) => {
+                                                    e.stopPropagation()
+                                                    abrirModelo(m)
+                                                }}
+                                            >
+                                                <Business fontSize="small" />
+                                            </IconButton>
+                                        </Tooltip>
+                                    </TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                    </TableContainer>
+                </>
+            )}
 
             <OficinasAsignadasDialog
                 abierto={dialogoVer}

@@ -7,6 +7,7 @@ import { useState } from 'react'
 import ArticuloDialog from '../components/ArticuloDialog'
 import CategoriaDialog from '../components/CategoriaDialog'
 import Buscador from '../components/Buscador'
+import EncabezadoPagina from '../components/EncabezadoPagina'
 import { normalizar } from '../utils/texto'
 
 function Articulos({ articulos, categorias }) {
@@ -82,19 +83,21 @@ function Articulos({ articulos, categorias }) {
 
     return (
         <>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                <Typography variant="h4">Artículos</Typography>
-                <Box sx={{ display: 'flex', gap: 1 }}>
-                    <Button
-                        variant="outlined"
-                        startIcon={<Category />}
-                        onClick={() => setCategoriasAbierto(true)}
-                    >
-                        Categorías
-                    </Button>
-                    <Button variant="contained" onClick={abrirNuevo}>Nuevo artículo</Button>
-                </Box>
-            </Box>
+            <EncabezadoPagina
+                titulo="Artículos"
+                acciones={
+                    <>
+                        <Button
+                            variant="outlined"
+                            startIcon={<Category />}
+                            onClick={() => setCategoriasAbierto(true)}
+                        >
+                            Categorías
+                        </Button>
+                        <Button variant="contained" onClick={abrirNuevo}>Nuevo artículo</Button>
+                    </>
+                }
+            />
 
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap', mb: 2 }}>
                 <Buscador
@@ -124,57 +127,124 @@ function Articulos({ articulos, categorias }) {
                 articulos={articulos}
             />
 
-            <TableContainer component={Paper}>
-                <Table>
-                    <TableHead>
-                        <TableRow>
-                            {columna('nombre', 'Nombre')}
-                            {columna('categoria', 'Categoría')}
-                            {columna('stock', 'Stock')}
-                            {columna('estado', 'Estado')}
-                            <TableCell align="right">Acciones</TableCell>
-                        </TableRow>
-                    </TableHead>
-                    <TableBody>
+            {ordenados.length === 0 ? (
+                <Paper sx={{ p: 4, textAlign: 'center' }}>
+                    <Typography color="text.secondary">
+                        {termino
+                            ? `No se encontraron artículos para "${busqueda.trim()}".`
+                            : 'Todavía no hay artículos cargados.'}
+                    </Typography>
+                </Paper>
+            ) : (
+                <>
+                    <Box
+                        sx={{
+                            display: { xs: 'flex', sm: 'none' },
+                            flexDirection: 'column',
+                            gap: 1.5,
+                        }}
+                    >
                         {ordenados.map((a) => (
-                            <TableRow key={a.id} sx={{ opacity: a.activo ? 1 : 0.5 }}>
-                                <TableCell>{a.nombre}</TableCell>
-                                <TableCell>{categoriaDe(a)}</TableCell>
-                                <TableCell>
+                            <Paper
+                                key={a.id}
+                                variant="outlined"
+                                sx={{
+                                    p: 2,
+                                    borderRadius: 2,
+                                    opacity: a.activo ? 1 : 0.65,
+                                }}
+                            >
+                                <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
+                                    <Box sx={{ flexGrow: 1, minWidth: 0 }}>
+                                        <Typography
+                                            variant="subtitle1"
+                                            sx={{ fontWeight: 600, lineHeight: 1.3 }}
+                                        >
+                                            {a.nombre}
+                                        </Typography>
+                                        <Typography variant="body2" color="text.secondary">
+                                            {categoriaDe(a)}
+                                        </Typography>
+                                    </Box>
+                                    <Tooltip title="Editar">
+                                        <IconButton
+                                            onClick={() => abrirEdicion(a)}
+                                            aria-label={`Editar ${a.nombre}`}
+                                            sx={{ mt: -0.5, mr: -1 }}
+                                        >
+                                            <Edit fontSize="small" />
+                                        </IconButton>
+                                    </Tooltip>
+                                </Box>
+
+                                <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mt: 1.5 }}>
                                     <Chip
-                                        label={`${a.stock_actual} / mín ${a.stock_minimo}`}
+                                        size="small"
+                                        label={`Stock: ${a.stock_actual} / mín ${a.stock_minimo}`}
                                         color={a.stock_actual < a.stock_minimo ? 'error' : 'success'}
                                     />
-                                </TableCell>
-                                <TableCell>
                                     <Chip
+                                        size="small"
                                         label={a.activo ? 'Activo' : 'Inactivo'}
                                         color={a.activo ? 'success' : 'default'}
                                         variant={a.activo ? 'filled' : 'outlined'}
                                     />
-                                </TableCell>
-                                <TableCell align="right">
-                                    <Tooltip title="Editar">
-                                        <IconButton onClick={() => abrirEdicion(a)}>
-                                            <Edit fontSize="small" />
-                                        </IconButton>
-                                    </Tooltip>
-                                </TableCell>
-                            </TableRow>
+                                </Box>
+                            </Paper>
                         ))}
+                    </Box>
 
-                        {ordenados.length === 0 && (
+                    <TableContainer
+                        component={Paper}
+                        sx={{ display: { xs: 'none', sm: 'block' } }}
+                    >
+                        <Table
+                            sx={{
+                                minWidth: 520,
+                                '& .MuiTableCell-root': { px: { xs: 1.25, sm: 2 } },
+                            }}
+                        >
+                        <TableHead>
                             <TableRow>
-                                <TableCell colSpan={5} align="center" sx={{ py: 4, color: 'text.secondary' }}>
-                                    {termino
-                                        ? `No se encontraron artículos para "${busqueda.trim()}".`
-                                        : 'Todavía no hay artículos cargados.'}
-                                </TableCell>
+                                {columna('nombre', 'Nombre')}
+                                {columna('categoria', 'Categoría')}
+                                {columna('stock', 'Stock')}
+                                {columna('estado', 'Estado')}
+                                <TableCell align="right">Acciones</TableCell>
                             </TableRow>
-                        )}
-                    </TableBody>
-                </Table>
-            </TableContainer>
+                        </TableHead>
+                        <TableBody>
+                            {ordenados.map((a) => (
+                                <TableRow key={a.id} sx={{ opacity: a.activo ? 1 : 0.5 }}>
+                                    <TableCell>{a.nombre}</TableCell>
+                                    <TableCell>{categoriaDe(a)}</TableCell>
+                                    <TableCell>
+                                        <Chip
+                                            label={`${a.stock_actual} / mín ${a.stock_minimo}`}
+                                            color={a.stock_actual < a.stock_minimo ? 'error' : 'success'}
+                                        />
+                                    </TableCell>
+                                    <TableCell>
+                                        <Chip
+                                            label={a.activo ? 'Activo' : 'Inactivo'}
+                                            color={a.activo ? 'success' : 'default'}
+                                            variant={a.activo ? 'filled' : 'outlined'}
+                                        />
+                                    </TableCell>
+                                    <TableCell align="right">
+                                        <Tooltip title="Editar">
+                                            <IconButton onClick={() => abrirEdicion(a)}>
+                                                <Edit fontSize="small" />
+                                            </IconButton>
+                                        </Tooltip>
+                                    </TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                    </TableContainer>
+                </>
+            )}
         </>
     )
 }

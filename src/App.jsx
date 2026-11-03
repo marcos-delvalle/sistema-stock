@@ -1,11 +1,12 @@
 import { useState } from 'react'
 import { BrowserRouter, Link, Route, Routes, useLocation } from 'react-router-dom'
 import {
-    Alert, AppBar, Box, Button, CircularProgress, Drawer, IconButton,
+    Alert, AppBar, Box, Button, CircularProgress, Drawer, Fab, IconButton,
     LinearProgress, List, ListItemButton, ListItemText, Snackbar,
-    Toolbar, Tooltip, Typography,
+    Toolbar, Tooltip, Typography, useMediaQuery,
 } from '@mui/material'
-import { Add, Logout } from '@mui/icons-material'
+import { useTheme } from '@mui/material/styles'
+import { Add, Logout, Menu as MenuIcon } from '@mui/icons-material'
 import Articulos from './pages/Articulos'
 import Dashboard from './pages/Dashboard'
 import Dependencias from './pages/Dependencias'
@@ -96,15 +97,18 @@ function Layout({ usuario }) {
     } = useDatos()
     const { salir } = useAuth()
     const location = useLocation()
+    const theme = useTheme()
+    const esMovil = useMediaQuery(theme.breakpoints.down('md'))
 
+    const [menuAbierto, setMenuAbierto] = useState(false)
     const [dialogoAbierto, setDialogoAbierto] = useState(false)
     const [versionMovimiento, setVersionMovimiento] = useState(0)
 
     const menuItems = [
         { texto: 'Dashboard', ruta: '/' },
-        { texto: 'Toners', ruta: '/toners' },
+        { texto: 'Tóners', ruta: '/toners' },
         { texto: 'Impresoras', ruta: '/impresoras' },
-        { texto: 'Articulos', ruta: '/articulos' },
+        { texto: 'Artículos', ruta: '/articulos' },
         { texto: 'Dependencias', ruta: '/dependencias' },
         { texto: 'Historial', ruta: '/historial' },
     ]
@@ -127,6 +131,7 @@ function Layout({ usuario }) {
     const oficinasActivas = oficinas.filter((o) => o.activo)
 
     function abrirNuevoMovimiento() {
+        setMenuAbierto(false)
         setVersionMovimiento((v) => v + 1)
         setDialogoAbierto(true)
     }
@@ -142,7 +147,25 @@ function Layout({ usuario }) {
             <div style={{ display: 'flex' }}>
                 <AppBar position="fixed" sx={{ zIndex: 1201 }}>
                     <Toolbar>
-                        <Typography variant="h6" sx={{ flexGrow: 1 }}>
+                        {esMovil && (
+                            <IconButton
+                                color="inherit"
+                                edge="start"
+                                onClick={() => setMenuAbierto((abierto) => !abierto)}
+                                sx={{ mr: 1 }}
+                                aria-label="Abrir menú"
+                            >
+                                <MenuIcon />
+                            </IconButton>
+                        )}
+                        <Typography
+                            variant="h6"
+                            sx={{
+                                flexGrow: 1,
+                                fontSize: { xs: '1.05rem', sm: '1.25rem' },
+                                whiteSpace: 'nowrap',
+                            }}
+                        >
                             Sistema Stock
                         </Typography>
                         <Typography
@@ -160,9 +183,12 @@ function Layout({ usuario }) {
                 </AppBar>
 
                 <Drawer
-                    variant="permanent"
+                    variant={esMovil ? 'temporary' : 'permanent'}
+                    open={esMovil ? menuAbierto : true}
+                    onClose={() => setMenuAbierto(false)}
+                    ModalProps={{ keepMounted: true }}
                     sx={{
-                        width: DRAWER_WIDTH,
+                        width: esMovil ? 0 : DRAWER_WIDTH,
                         flexShrink: 0,
                         '& .MuiDrawer-paper': { width: DRAWER_WIDTH, boxSizing: 'border-box' },
                     }}
@@ -176,20 +202,20 @@ function Layout({ usuario }) {
                                     component={Link}
                                     to={item.ruta}
                                     selected={location.pathname === item.ruta}
+                                    onClick={() => setMenuAbierto(false)}
                                 >
                                     <ListItemText primary={item.texto} />
                                 </ListItemButton>
                             ))}
                         </List>
-                        <IconButton
-                            variant="outlined"
-                            sx={{ mt: 'auto', m: 2, width: 'fit-content' }}
-                            color="primary"
+                        <Button
+                            variant="contained"
+                            startIcon={<Add />}
                             onClick={abrirNuevoMovimiento}
-                            aria-label="Nuevo movimiento"
+                            sx={{ m: 2, mt: 'auto' }}
                         >
-                            <Add sx={{ width: '100%', height: '3em' }} />
-                        </IconButton>
+                            Nuevo movimiento
+                        </Button>
                     </Box>
                 </Drawer>
 
@@ -201,7 +227,16 @@ function Layout({ usuario }) {
                     oficinas={oficinasActivas}
                 />
 
-                <Box component="main" sx={{ flexGrow: 1, p: 3, mt: 8, minWidth: 0 }}>
+                <Box
+                    component="main"
+                    sx={{
+                        flexGrow: 1,
+                        p: { xs: 2, sm: 3 },
+                        pb: { xs: 10, sm: 3 },
+                        mt: { xs: 7, sm: 8 },
+                        minWidth: 0,
+                    }}
+                >
                     <Routes>
                         <Route path="/" element={
                             <Dashboard
@@ -258,6 +293,21 @@ function Layout({ usuario }) {
                     </Routes>
                 </Box>
             </div>
+
+            <Fab
+                color="primary"
+                aria-label="Nuevo movimiento"
+                onClick={abrirNuevoMovimiento}
+                sx={{
+                    position: 'fixed',
+                    bottom: { xs: 16, sm: 24 },
+                    right: { xs: 16, sm: 24 },
+                    display: { xs: 'flex', md: 'none' },
+                    zIndex: 1100,
+                }}
+            >
+                <Add />
+            </Fab>
 
             <Snackbar
                 key={aviso?.id}

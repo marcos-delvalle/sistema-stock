@@ -94,7 +94,7 @@ function DependenciaDialog({
                     {editando && onAgregarOficina && (
                         <>
                             <Divider />
-                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
                                 <Typography variant="body2" color="text.secondary">
                                     Oficinas asignadas: {cantidadOficinas}
                                 </Typography>

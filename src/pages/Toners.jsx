@@ -6,6 +6,7 @@ import { Edit, Print } from '@mui/icons-material'
 import { useState } from 'react'
 import TonerDialog from '../components/TonerDialog'
 import Buscador from '../components/Buscador'
+import EncabezadoPagina from '../components/EncabezadoPagina'
 import { normalizar } from '../utils/texto'
 
 function Toners({ articulos, modelos, unidades, categorias }) {
@@ -44,10 +45,10 @@ function Toners({ articulos, modelos, unidades, categorias }) {
 
     return (
         <>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                <Typography variant="h4">Tóners</Typography>
-                <Button variant="contained" onClick={abrirNuevo}>Nuevo tóner</Button>
-            </Box>
+            <EncabezadoPagina
+                titulo="Tóners"
+                acciones={<Button variant="contained" onClick={abrirNuevo}>Nuevo tóner</Button>}
+            />
 
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap', mb: 2 }}>
                 <Buscador

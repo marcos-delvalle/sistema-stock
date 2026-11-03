@@ -111,7 +111,14 @@ function NuevoMovimientoDialog({ abierto, onCerrar, articulos, oficinas }) {
                         slotProps={{ textField: { fullWidth: true } }}
                     />
 
-                    <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.5 }}>
+                    <Box
+                        sx={{
+                            display: 'flex',
+                            flexDirection: { xs: 'column', sm: 'row' },
+                            alignItems: { xs: 'stretch', sm: 'flex-start' },
+                            gap: 1.5,
+                        }}
+                    >
                         <TextField
                             label="Cantidad"
                             type="number"
@@ -141,7 +148,7 @@ function NuevoMovimientoDialog({ abierto, onCerrar, articulos, oficinas }) {
                                 />
                             }
                             label={tipo === 'entrada' ? 'Sumar stock' : 'Descontar'}
-                            sx={{ mt: 1, mr: 0, whiteSpace: 'nowrap' }}
+                            sx={{ mt: { xs: 0, sm: 1 }, mr: 0, whiteSpace: 'nowrap' }}
                         />
                     </Box>
 

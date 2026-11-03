@@ -124,7 +124,7 @@ function TonerDialog({
                         onChange={(e) => { setNombre(e.target.value); setError('') }}
                     />
 
-                    <Box sx={{ display: 'flex', gap: 2 }}>
+                    <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2 }}>
                         <TextField
                             label="Stock mínimo"
                             type="number"
