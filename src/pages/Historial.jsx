@@ -1,16 +1,19 @@
 import {
     Box, Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
-    Paper, Chip, Typography,
+    Paper, Chip, IconButton, Tooltip, Typography,
 } from '@mui/material'
+import { Edit } from '@mui/icons-material'
 import { useState } from 'react'
 import { formatearFecha } from '../utils/fecha'
 import Buscador from '../components/Buscador'
 import EncabezadoPagina from '../components/EncabezadoPagina'
+import MovimientoDialog from '../components/MovimientoDialog'
 import { normalizar } from '../utils/texto'
 
-function Historial({ movimientos, articulos, oficinas }) {
+function Historial({ movimientos, articulos, oficinas, categorias, dependencias }) {
 
     const [busqueda, setBusqueda] = useState('')
+    const [movimientoEditando, setMovimientoEditando] = useState(null)
 
     const termino = normalizar(busqueda)
 
@@ -28,6 +31,15 @@ function Historial({ movimientos, articulos, oficinas }) {
 
     const ordenados = [...filtrados].sort(
         (a, b) => String(b.fecha).localeCompare(String(a.fecha)) || b.id - a.id
+    )
+
+    // Al editar se incluye el artículo/oficina actual aunque esté inactivo,
+    // para poder conservar el movimiento histórico.
+    const articulosEdicion = articulos.filter(
+        (a) => a.activo || a.id === movimientoEditando?.articulo_id
+    )
+    const oficinasEdicion = oficinas.filter(
+        (o) => o.activo || o.id === movimientoEditando?.oficina_id
     )
 
     return (
@@ -87,11 +99,23 @@ function Historial({ movimientos, articulos, oficinas }) {
                                         <Typography variant="body2" color="text.secondary">
                                             {formatearFecha(m.fecha)}
                                         </Typography>
-                                        <Chip
-                                            size="small"
-                                            label={m.tipo === 'entrada' ? 'Entrada' : 'Salida'}
-                                            color={m.tipo === 'entrada' ? 'success' : 'primary'}
-                                        />
+                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                                            <Chip
+                                                size="small"
+                                                label={m.tipo === 'entrada' ? 'Entrada' : 'Salida'}
+                                                color={m.tipo === 'entrada' ? 'success' : 'primary'}
+                                            />
+                                            <Tooltip title="Editar movimiento">
+                                                <IconButton
+                                                    size="small"
+                                                    onClick={() => setMovimientoEditando(m)}
+                                                    aria-label={`Editar movimiento de ${articuloNombre}`}
+                                                    sx={{ mr: -1 }}
+                                                >
+                                                    <Edit fontSize="small" />
+                                                </IconButton>
+                                            </Tooltip>
+                                        </Box>
                                     </Box>
 
                                     <Typography
@@ -133,7 +157,7 @@ function Historial({ movimientos, articulos, oficinas }) {
                     >
                         <Table
                             sx={{
-                                minWidth: 540,
+                                minWidth: 640,
                                 '& .MuiTableCell-root': { px: { xs: 1.25, sm: 2 } },
                             }}
                         >
@@ -144,6 +168,7 @@ function Historial({ movimientos, articulos, oficinas }) {
                                 <TableCell>Tipo</TableCell>
                                 <TableCell align="right">Cantidad</TableCell>
                                 <TableCell>Oficina</TableCell>
+                                <TableCell align="right">Acciones</TableCell>
                             </TableRow>
                         </TableHead>
                         <TableBody>
@@ -172,12 +197,38 @@ function Historial({ movimientos, articulos, oficinas }) {
                                     <TableCell>
                                         {m.oficina_nombre || oficinas.find((o) => o.id === m.oficina_id)?.nombre || '—'}
                                     </TableCell>
+                                    <TableCell align="right">
+                                        <Tooltip title="Editar movimiento">
+                                            <IconButton
+                                                onClick={() => setMovimientoEditando(m)}
+                                                aria-label={`Editar movimiento de ${
+                                                    m.articulo_nombre
+                                                    || articulos.find((a) => a.id === m.articulo_id)?.nombre
+                                                    || '—'
+                                                }`}
+                                            >
+                                                <Edit fontSize="small" />
+                                            </IconButton>
+                                        </Tooltip>
+                                    </TableCell>
                                 </TableRow>
                             ))}
                         </TableBody>
                     </Table>
                     </TableContainer>
                 </>
+            )}
+
+            {movimientoEditando && (
+                <MovimientoDialog
+                    abierto
+                    onCerrar={() => setMovimientoEditando(null)}
+                    movimiento={movimientoEditando}
+                    articulos={articulosEdicion}
+                    oficinas={oficinasEdicion}
+                    categorias={categorias}
+                    dependencias={dependencias}
+                />
             )}
         </>
     )

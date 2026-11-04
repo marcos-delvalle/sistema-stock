@@ -14,7 +14,7 @@ import Historial from './pages/Historial'
 import Impresoras from './pages/Impresoras'
 import Login from './pages/Login'
 import Toners from './pages/Toners'
-import NuevoMovimientoDialog from './components/NuevoMovimientoDialog'
+import MovimientoDialog from './components/MovimientoDialog'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import { DatosProvider, useDatos } from './context/DatosContext'
 
@@ -219,7 +219,7 @@ function Layout({ usuario }) {
                     </Box>
                 </Drawer>
 
-                <NuevoMovimientoDialog
+                <MovimientoDialog
                     key={versionMovimiento}
                     abierto={dialogoAbierto}
                     onCerrar={() => setDialogoAbierto(false)}
@@ -289,6 +289,8 @@ function Layout({ usuario }) {
                                 movimientos={movimientos}
                                 articulos={articulos}
                                 oficinas={oficinas}
+                                categorias={categorias}
+                                dependencias={dependencias}
                             />
                         } />
                         <Route path="*" element={<h1>404 - No encontrado</h1>} />

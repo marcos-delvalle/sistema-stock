@@ -9,36 +9,41 @@ import { api } from '../api/client'
 import { useDatos } from '../context/DatosContext'
 import { normalizar } from '../utils/texto'
 
-// Mantiene la primera aparición de cada etiqueta; sirve para que el
-// autocompletar no muestre dos veces la misma sugerencia.
-function sinDuplicados(items, etiqueta) {
-    const vistos = new Set()
+// Mantiene una sola opción por etiqueta. Si se está editando, conserva el
+// registro actual aunque su etiqueta coincida con la de otro.
+function sinDuplicados(items, etiqueta, conservarId = null) {
+    const porEtiqueta = new Map()
 
-    return items.filter((item) => {
+    for (const item of items) {
         const clave = normalizar(etiqueta(item))
 
-        if (vistos.has(clave)) return false
+        if (!porEtiqueta.has(clave) || item.id === conservarId) {
+            porEtiqueta.set(clave, item)
+        }
+    }
 
-        vistos.add(clave)
-        return true
-    })
+    return [...porEtiqueta.values()]
 }
 
 function conContexto(nombre, contexto) {
     return contexto ? `${nombre} — ${contexto}` : nombre
 }
 
-function NuevoMovimientoDialog({
+function MovimientoDialog({
     abierto, onCerrar, articulos, oficinas, categorias = [], dependencias = [],
+    movimiento,
 }) {
     const { recargar, notificar } = useDatos()
+    const editando = Boolean(movimiento)
 
-    const [articuloId, setArticuloId] = useState('')
-    const [tipo, setTipo] = useState('salida')
-    const [fecha, setFecha] = useState(() => dayjs())
-    const [cantidad, setCantidad] = useState(1)
-    const [afectaStock, setAfectaStock] = useState(true)
-    const [oficinaId, setOficinaId] = useState('')
+    const [articuloId, setArticuloId] = useState(movimiento?.articulo_id ?? '')
+    const [tipo, setTipo] = useState(movimiento?.tipo || 'salida')
+    const [fecha, setFecha] = useState(() => (
+        movimiento ? dayjs(movimiento.fecha) : dayjs()
+    ))
+    const [cantidad, setCantidad] = useState(movimiento?.cantidad ?? 1)
+    const [afectaStock, setAfectaStock] = useState(movimiento?.afecta_stock ?? true)
+    const [oficinaId, setOficinaId] = useState(movimiento?.oficina_id ?? '')
     const [error, setError] = useState('')
     const [guardando, setGuardando] = useState(false)
 
@@ -51,12 +56,39 @@ function NuevoMovimientoDialog({
         dependencias.find((d) => d.id === o.dependencia_id)?.nombre
     )
 
-    const articulosUnicos = sinDuplicados(articulos, etiquetaArticulo)
-    const oficinasUnicas = sinDuplicados(oficinas, etiquetaOficina)
+    const articulosUnicos = sinDuplicados(
+        articulos,
+        etiquetaArticulo,
+        movimiento?.articulo_id ?? null
+    )
+    const oficinasUnicas = sinDuplicados(
+        oficinas,
+        etiquetaOficina,
+        movimiento?.oficina_id ?? null
+    )
 
     const articulo = articulosUnicos.find((a) => a.id === Number(articuloId))
 
-    async function registrar() {
+    // Si se edita un movimiento que afecta stock, el stock actual todavía
+    // incluye su efecto. Este es el stock que quedaría disponible al revertirlo.
+    const stockDisponible = (() => {
+        if (!articulo) return 0
+        if (
+            !editando ||
+            !movimiento.afecta_stock ||
+            movimiento.articulo_id !== articulo.id
+        ) {
+            return articulo.stock_actual
+        }
+
+        return articulo.stock_actual + (
+            movimiento.tipo === 'entrada'
+                ? -movimiento.cantidad
+                : movimiento.cantidad
+        )
+    })()
+
+    async function guardar() {
         const cant = Number(cantidad)
 
         if (!articulo) {
@@ -75,10 +107,12 @@ function NuevoMovimientoDialog({
             setError('Elegí la oficina de destino.')
             return
         }
-        if (tipo === 'salida' && afectaStock && cant > articulo.stock_actual) {
+        if (tipo === 'salida' && afectaStock && cant > stockDisponible) {
+            const stockFinal = stockDisponible - cant
+
             setError(
-                `Stock insuficiente: solo hay ${articulo.stock_actual} ` +
-                `unidad${articulo.stock_actual === 1 ? '' : 'es'}.`
+                `Stock insuficiente: el artículo quedaría con ${stockFinal} ` +
+                `unidad${stockFinal === -1 ? '' : 'es'}.`
             )
             return
         }
@@ -87,17 +121,25 @@ function NuevoMovimientoDialog({
         setError('')
 
         try {
-            await api.post('/movimientos', {
+            const datos = {
                 articulo_id: articulo.id,
                 tipo,
                 cantidad: cant,
                 oficina_id: tipo === 'salida' ? Number(oficinaId) : null,
                 fecha: fecha.format('YYYY-MM-DD'),
                 afecta_stock: afectaStock,
-            })
+            }
 
-            const mensaje = tipo === 'entrada' ? 'Entrada registrada' : 'Salida registrada'
-            notificar(afectaStock ? mensaje : `${mensaje} sin modificar stock`)
+            if (editando) {
+                await api.put(`/movimientos/${movimiento.id}`, datos)
+                notificar('Movimiento actualizado')
+            } else {
+                await api.post('/movimientos', datos)
+
+                const mensaje = tipo === 'entrada' ? 'Entrada registrada' : 'Salida registrada'
+                notificar(afectaStock ? mensaje : `${mensaje} sin modificar stock`)
+            }
+
             await recargar()
             onCerrar()
         } catch (e) {
@@ -109,7 +151,7 @@ function NuevoMovimientoDialog({
 
     return (
         <Dialog open={abierto} onClose={guardando ? undefined : onCerrar} maxWidth="xs" fullWidth>
-            <DialogTitle>Nuevo movimiento</DialogTitle>
+            <DialogTitle>{editando ? 'Editar movimiento' : 'Nuevo movimiento'}</DialogTitle>
             <DialogContent>
                 <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
                     {error && <Alert severity="error">{error}</Alert>}
@@ -166,7 +208,9 @@ function NuevoMovimientoDialog({
                                 !afectaStock
                                     ? 'No modifica el stock actual'
                                     : articulo
-                                        ? `Stock actual: ${articulo.stock_actual}`
+                                        ? stockDisponible !== articulo.stock_actual
+                                            ? `Stock actual: ${articulo.stock_actual} · disponible al editar: ${stockDisponible}`
+                                            : `Stock actual: ${articulo.stock_actual}`
                                         : ' '
                             }
                             sx={{ flex: 1 }}
@@ -203,12 +247,14 @@ function NuevoMovimientoDialog({
             </DialogContent>
             <DialogActions>
                 <Button onClick={onCerrar} disabled={guardando}>Cancelar</Button>
-                <Button variant="contained" onClick={registrar} disabled={guardando}>
-                    {guardando ? 'Registrando...' : 'Registrar'}
+                <Button variant="contained" onClick={guardar} disabled={guardando}>
+                    {guardando
+                        ? (editando ? 'Guardando...' : 'Registrando...')
+                        : (editando ? 'Guardar cambios' : 'Registrar')}
                 </Button>
             </DialogActions>
         </Dialog>
     )
 }
 
-export default NuevoMovimientoDialog
+export default MovimientoDialog

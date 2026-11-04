@@ -186,6 +186,7 @@ La sesión dura 12 horas y viaja en una cookie `httpOnly` (JavaScript no puede l
 | GET | `/api/oficinas/:id/movimientos` | Solo salidas de la oficina |
 | GET | `/api/movimientos` | Historial con filtros |
 | POST | `/api/movimientos` | Alta con transacción de stock (`afecta_stock: false` = solo historial) |
+| PUT | `/api/movimientos/:id` | Edición con reversión y recálculo de stock |
 
 Filtros de `GET /api/movimientos`: `articulo_id`, `oficina_id`, `tipo`,
 `desde`, `hasta` (formato `YYYY-MM-DD`).
@@ -197,6 +198,8 @@ Filtros de artículos: `categoria_id`, `activo`.
   Si no hay stock, responde `409` y no modifica nada.
 - **Carga histórica**: con `afecta_stock: false` el movimiento se registra sin
   validar ni modificar el stock.
+- **Edición de movimientos**: se revierte el efecto anterior y se aplica el nuevo
+  en la misma transacción. Si el stock resultante es negativo, responde `409`.
 - **Entrada**: no lleva oficina (va al depósito).
 - **Salida**: debe indicar una oficina activa.
 - **Alta de artículo con stock**: genera automáticamente una entrada en el historial.
