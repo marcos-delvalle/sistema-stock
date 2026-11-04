@@ -1,20 +1,25 @@
 import {
     Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
-    Paper, Chip, Button, Box, IconButton, Typography, Tooltip, TableSortLabel,
+    Paper, Chip, Button, Box, FormControlLabel, IconButton, Switch,
+    Typography, Tooltip, TableSortLabel,
 } from '@mui/material'
-import { Category, Edit } from '@mui/icons-material'
+import { Category, Delete, Edit } from '@mui/icons-material'
 import { useState } from 'react'
+import { api } from '../api/client'
 import ArticuloDialog from '../components/ArticuloDialog'
 import CategoriaDialog from '../components/CategoriaDialog'
 import Buscador from '../components/Buscador'
 import EncabezadoPagina from '../components/EncabezadoPagina'
+import { useDatos } from '../context/DatosContext'
 import { normalizar } from '../utils/texto'
 
 function Articulos({ articulos, categorias }) {
+    const { recargar, notificar } = useDatos()
 
     const [articuloEditando, setArticuloEditando] = useState(null)
     const [dialogoAbierto, setDialogoAbierto] = useState(false)
     const [categoriasAbierto, setCategoriasAbierto] = useState(false)
+    const [mostrarInactivos, setMostrarInactivos] = useState(false)
     const [orden, setOrden] = useState({ campo: 'nombre', dir: 'asc' })
     const [busqueda, setBusqueda] = useState('')
 
@@ -26,6 +31,22 @@ function Articulos({ articulos, categorias }) {
     function abrirEdicion(a) {
         setArticuloEditando(a)
         setDialogoAbierto(true)
+    }
+
+    async function eliminarArticulo(a) {
+        const confirmado = window.confirm(
+            `¿Eliminar "${a.nombre}"? El artículo quedará inactivo para conservar el historial.`
+        )
+
+        if (!confirmado) return
+
+        try {
+            await api.delete(`/articulos/${a.id}`)
+            notificar('Artículo eliminado')
+            await recargar()
+        } catch (e) {
+            notificar(e.message, 'error')
+        }
     }
 
     function categoriaDe(a) {
@@ -41,10 +62,15 @@ function Articulos({ articulos, categorias }) {
 
     const termino = normalizar(busqueda)
 
+    const hayInactivos = articulos.some((a) => !a.activo)
+
     const filtrados = articulos.filter((a) => (
-        !termino ||
-        normalizar(a.nombre).includes(termino) ||
-        normalizar(categoriaDe(a)).includes(termino)
+        (mostrarInactivos || a.activo) &&
+        (
+            !termino ||
+            normalizar(a.nombre).includes(termino) ||
+            normalizar(categoriaDe(a)).includes(termino)
+        )
     ))
 
     const ordenados = [...filtrados].sort((a, b) => {
@@ -105,6 +131,17 @@ function Articulos({ articulos, categorias }) {
                     onChange={setBusqueda}
                     placeholder="Buscar por nombre o categoría..."
                 />
+                <FormControlLabel
+                    control={
+                        <Switch
+                            size="small"
+                            checked={mostrarInactivos}
+                            onChange={(e) => setMostrarInactivos(e.target.checked)}
+                        />
+                    }
+                    label="Mostrar inactivos"
+                    sx={{ m: 0 }}
+                />
                 {termino && (
                     <Typography variant="body2" color="text.secondary">
                         {filtrados.length} artículo{filtrados.length === 1 ? '' : 's'}
@@ -132,7 +169,9 @@ function Articulos({ articulos, categorias }) {
                     <Typography color="text.secondary">
                         {termino
                             ? `No se encontraron artículos para "${busqueda.trim()}".`
-                            : 'Todavía no hay artículos cargados.'}
+                            : hayInactivos && !mostrarInactivos
+                                ? 'No hay artículos activos. Activá "Mostrar inactivos" para ver los dados de baja.'
+                                : 'Todavía no hay artículos cargados.'}
                     </Typography>
                 </Paper>
             ) : (
@@ -166,15 +205,27 @@ function Articulos({ articulos, categorias }) {
                                             {categoriaDe(a)}
                                         </Typography>
                                     </Box>
-                                    <Tooltip title="Editar">
-                                        <IconButton
-                                            onClick={() => abrirEdicion(a)}
-                                            aria-label={`Editar ${a.nombre}`}
-                                            sx={{ mt: -0.5, mr: -1 }}
-                                        >
-                                            <Edit fontSize="small" />
-                                        </IconButton>
-                                    </Tooltip>
+                                    <Box sx={{ display: 'flex', gap: 0.5, mt: -0.5, mr: -1 }}>
+                                        <Tooltip title="Editar">
+                                            <IconButton
+                                                onClick={() => abrirEdicion(a)}
+                                                aria-label={`Editar ${a.nombre}`}
+                                            >
+                                                <Edit fontSize="small" />
+                                            </IconButton>
+                                        </Tooltip>
+                                        {a.activo && (
+                                            <Tooltip title="Eliminar">
+                                                <IconButton
+                                                    color="error"
+                                                    onClick={() => eliminarArticulo(a)}
+                                                    aria-label={`Eliminar ${a.nombre}`}
+                                                >
+                                                    <Delete fontSize="small" />
+                                                </IconButton>
+                                            </Tooltip>
+                                        )}
+                                    </Box>
                                 </Box>
 
                                 <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mt: 1.5 }}>
@@ -233,10 +284,24 @@ function Articulos({ articulos, categorias }) {
                                     </TableCell>
                                     <TableCell align="right">
                                         <Tooltip title="Editar">
-                                            <IconButton onClick={() => abrirEdicion(a)}>
+                                            <IconButton
+                                                onClick={() => abrirEdicion(a)}
+                                                aria-label={`Editar ${a.nombre}`}
+                                            >
                                                 <Edit fontSize="small" />
                                             </IconButton>
                                         </Tooltip>
+                                        {a.activo && (
+                                            <Tooltip title="Eliminar">
+                                                <IconButton
+                                                    color="error"
+                                                    onClick={() => eliminarArticulo(a)}
+                                                    aria-label={`Eliminar ${a.nombre}`}
+                                                >
+                                                    <Delete fontSize="small" />
+                                                </IconButton>
+                                            </Tooltip>
+                                        )}
                                     </TableCell>
                                 </TableRow>
                             ))}
