@@ -7,17 +7,22 @@ import { api } from '../api/client'
 import { useDatos } from '../context/DatosContext'
 import { normalizar } from '../utils/texto'
 
-function CrearImpresoraDialog({ abierto, onCerrar, articulos, modelos, categorias }) {
+function CrearImpresoraDialog({
+    abierto, onCerrar, articulos, modelos, categorias, modelo,
+}) {
     const { recargar, notificar } = useDatos()
+    const editando = Boolean(modelo)
 
-    const [marca, setMarca] = useState('')
-    const [nombreModelo, setNombreModelo] = useState('')
-    const [tonerId, setTonerId] = useState('')
+    const [marca, setMarca] = useState(modelo?.marca || '')
+    const [nombreModelo, setNombreModelo] = useState(modelo?.modelo || '')
+    const [tonerId, setTonerId] = useState(modelo?.articulo_id ?? '')
     const [error, setError] = useState('')
     const [guardando, setGuardando] = useState(false)
 
     const catToner = categorias.find((c) => c.nombre === 'Tóner')
-    const toners = articulos.filter((a) => a.categoria_id === catToner?.id && a.activo)
+    const toners = articulos.filter((a) => (
+        a.categoria_id === catToner?.id && (a.activo || a.id === modelo?.articulo_id)
+    ))
     const tonerSeleccionado = toners.find((t) => t.id === Number(tonerId)) || null
 
     // Valores ya cargados, sin repetir. Sirven como sugerencias al escribir.
@@ -29,9 +34,9 @@ function CrearImpresoraDialog({ abierto, onCerrar, articulos, modelos, categoria
     )]
 
     function limpiar() {
-        setMarca('')
-        setNombreModelo('')
-        setTonerId('')
+        setMarca(modelo?.marca || '')
+        setNombreModelo(modelo?.modelo || '')
+        setTonerId(modelo?.articulo_id ?? '')
         setError('')
     }
 
@@ -40,13 +45,19 @@ function CrearImpresoraDialog({ abierto, onCerrar, articulos, modelos, categoria
         onCerrar()
     }
 
-    async function crear() {
-        if (!marca.trim() || !nombreModelo.trim() || !tonerId) {
-            setError('Completá marca, modelo y tóner compatible.')
+    async function guardar() {
+        if (!marca.trim() || !nombreModelo.trim()) {
+            setError('Completá marca y modelo.')
+            return
+        }
+
+        if (!editando && !tonerId) {
+            setError('Elegí un tóner compatible.')
             return
         }
 
         const existe = modelos.some((m) =>
+            m.id !== modelo?.id &&
             normalizar(m.marca) === normalizar(marca) &&
             normalizar(m.modelo) === normalizar(nombreModelo)
         )
@@ -60,13 +71,20 @@ function CrearImpresoraDialog({ abierto, onCerrar, articulos, modelos, categoria
         setError('')
 
         try {
-            await api.post('/modelos', {
+            const datos = {
                 marca: marca.trim(),
                 modelo: nombreModelo.trim(),
-                articulo_id: Number(tonerId),
-            })
+                articulo_id: tonerId ? Number(tonerId) : null,
+            }
 
-            notificar('Modelo de impresora creado')
+            if (editando) {
+                await api.put(`/modelos/${modelo.id}`, datos)
+                notificar('Impresora actualizada')
+            } else {
+                await api.post('/modelos', datos)
+                notificar('Modelo de impresora creado')
+            }
+
             await recargar()
             cerrar()
         } catch (e) {
@@ -78,7 +96,7 @@ function CrearImpresoraDialog({ abierto, onCerrar, articulos, modelos, categoria
 
     return (
         <Dialog open={abierto} onClose={guardando ? undefined : cerrar} maxWidth="xs" fullWidth>
-            <DialogTitle>Nueva impresora</DialogTitle>
+            <DialogTitle>{editando ? 'Editar impresora' : 'Nueva impresora'}</DialogTitle>
             <DialogContent>
                 <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
                     {error && <Alert severity="error">{error}</Alert>}
@@ -106,14 +124,21 @@ function CrearImpresoraDialog({ abierto, onCerrar, articulos, modelos, categoria
                         getOptionLabel={(t) => t.nombre}
                         value={tonerSeleccionado}
                         onChange={(e, nuevo) => { setTonerId(nuevo ? nuevo.id : ''); setError('') }}
-                        renderInput={(params) => <TextField {...params} label="Tóner compatible" />}
+                        renderInput={(params) => (
+                            <TextField
+                                {...params}
+                                label={editando ? 'Tóner compatible (opcional)' : 'Tóner compatible'}
+                            />
+                        )}
                     />
                 </Box>
             </DialogContent>
             <DialogActions>
                 <Button onClick={cerrar} disabled={guardando}>Cancelar</Button>
-                <Button variant="contained" onClick={crear} disabled={guardando}>
-                    {guardando ? 'Creando...' : 'Crear'}
+                <Button variant="contained" onClick={guardar} disabled={guardando}>
+                    {guardando
+                        ? (editando ? 'Guardando...' : 'Creando...')
+                        : (editando ? 'Guardar cambios' : 'Crear')}
                 </Button>
             </DialogActions>
         </Dialog>

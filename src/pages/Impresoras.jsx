@@ -2,7 +2,7 @@ import {
     Box, Button, Chip, IconButton, Paper, Table, TableBody, TableCell,
     TableContainer, TableHead, TableRow, TableSortLabel, Tooltip, Typography,
 } from '@mui/material'
-import { Business } from '@mui/icons-material'
+import { Business, Edit } from '@mui/icons-material'
 import { useState } from 'react'
 import OficinasAsignadasDialog from '../components/OficinasAsignadasDialog'
 import CrearImpresoraDialog from '../components/CrearImpresoraDialog'
@@ -12,11 +12,25 @@ import { normalizar } from '../utils/texto'
 
 function Impresoras({ modelos, unidades, oficinas, articulos, categorias }) {
 
-    const [dialogoCrear, setDialogoCrear] = useState(false)
+    const [dialogoFormulario, setDialogoFormulario] = useState(false)
+    const [modeloEditando, setModeloEditando] = useState(null)
+    const [versionDialogo, setVersionDialogo] = useState(0)
     const [modeloSeleccionado, setModeloSeleccionado] = useState(null)
     const [dialogoVer, setDialogoVer] = useState(false)
     const [orden, setOrden] = useState({ campo: 'marca', dir: 'asc' })
     const [busqueda, setBusqueda] = useState('')
+
+    function abrirNueva() {
+        setModeloEditando(null)
+        setVersionDialogo((v) => v + 1)
+        setDialogoFormulario(true)
+    }
+
+    function abrirEdicion(m) {
+        setModeloEditando(m)
+        setVersionDialogo((v) => v + 1)
+        setDialogoFormulario(true)
+    }
 
     function abrirModelo(m) {
         setModeloSeleccionado(m)
@@ -86,7 +100,7 @@ function Impresoras({ modelos, unidades, oficinas, articulos, categorias }) {
             <EncabezadoPagina
                 titulo="Impresoras"
                 acciones={
-                    <Button variant="contained" onClick={() => setDialogoCrear(true)}>
+                    <Button variant="contained" onClick={abrirNueva}>
                         Nueva impresora
                     </Button>
                 }
@@ -106,8 +120,10 @@ function Impresoras({ modelos, unidades, oficinas, articulos, categorias }) {
             </Box>
 
             <CrearImpresoraDialog
-                abierto={dialogoCrear}
-                onCerrar={() => setDialogoCrear(false)}
+                key={`${modeloEditando?.id ?? 'nueva'}-${versionDialogo}`}
+                abierto={dialogoFormulario}
+                onCerrar={() => setDialogoFormulario(false)}
+                modelo={modeloEditando}
                 modelos={modelos}
                 articulos={articulos}
                 categorias={categorias}
@@ -152,18 +168,30 @@ function Impresoras({ modelos, unidades, oficinas, articulos, categorias }) {
                                                 Tóner: {tonerDe(m)}
                                             </Typography>
                                         </Box>
-                                        <Tooltip title="Ver oficinas asignadas">
-                                            <IconButton
-                                                onClick={(e) => {
-                                                    e.stopPropagation()
-                                                    abrirModelo(m)
-                                                }}
-                                                aria-label={`Ver oficinas de ${m.marca} ${m.modelo}`}
-                                                sx={{ mt: -0.5, mr: -1 }}
-                                            >
-                                                <Business fontSize="small" />
-                                            </IconButton>
-                                        </Tooltip>
+                                        <Box sx={{ display: 'flex', gap: 0.5, mt: -0.5, mr: -1 }}>
+                                            <Tooltip title="Editar impresora">
+                                                <IconButton
+                                                    onClick={(e) => {
+                                                        e.stopPropagation()
+                                                        abrirEdicion(m)
+                                                    }}
+                                                    aria-label={`Editar ${m.marca} ${m.modelo}`}
+                                                >
+                                                    <Edit fontSize="small" />
+                                                </IconButton>
+                                            </Tooltip>
+                                            <Tooltip title="Ver oficinas asignadas">
+                                                <IconButton
+                                                    onClick={(e) => {
+                                                        e.stopPropagation()
+                                                        abrirModelo(m)
+                                                    }}
+                                                    aria-label={`Ver oficinas de ${m.marca} ${m.modelo}`}
+                                                >
+                                                    <Business fontSize="small" />
+                                                </IconButton>
+                                            </Tooltip>
+                                        </Box>
                                     </Box>
 
                                     <Chip
@@ -210,12 +238,24 @@ function Impresoras({ modelos, unidades, oficinas, articulos, categorias }) {
                                     <TableCell>{tonerDe(m)}</TableCell>
                                     <TableCell align="right">{asignadasDe(m)}</TableCell>
                                     <TableCell align="right">
+                                        <Tooltip title="Editar impresora">
+                                            <IconButton
+                                                onClick={(e) => {
+                                                    e.stopPropagation()
+                                                    abrirEdicion(m)
+                                                }}
+                                                aria-label={`Editar ${m.marca} ${m.modelo}`}
+                                            >
+                                                <Edit fontSize="small" />
+                                            </IconButton>
+                                        </Tooltip>
                                         <Tooltip title="Ver oficinas asignadas">
                                             <IconButton
                                                 onClick={(e) => {
                                                     e.stopPropagation()
                                                     abrirModelo(m)
                                                 }}
+                                                aria-label={`Ver oficinas de ${m.marca} ${m.modelo}`}
                                             >
                                                 <Business fontSize="small" />
                                             </IconButton>
