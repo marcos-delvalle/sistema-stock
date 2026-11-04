@@ -225,6 +225,8 @@ function Layout({ usuario }) {
                     onCerrar={() => setDialogoAbierto(false)}
                     articulos={articulosActivos}
                     oficinas={oficinasActivas}
+                    categorias={categorias}
+                    dependencias={dependencias}
                 />
 
                 <Box

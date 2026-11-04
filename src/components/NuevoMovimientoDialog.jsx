@@ -7,8 +7,30 @@ import dayjs from 'dayjs'
 import { DatePicker } from '@mui/x-date-pickers/DatePicker'
 import { api } from '../api/client'
 import { useDatos } from '../context/DatosContext'
+import { normalizar } from '../utils/texto'
 
-function NuevoMovimientoDialog({ abierto, onCerrar, articulos, oficinas }) {
+// Mantiene la primera aparición de cada etiqueta; sirve para que el
+// autocompletar no muestre dos veces la misma sugerencia.
+function sinDuplicados(items, etiqueta) {
+    const vistos = new Set()
+
+    return items.filter((item) => {
+        const clave = normalizar(etiqueta(item))
+
+        if (vistos.has(clave)) return false
+
+        vistos.add(clave)
+        return true
+    })
+}
+
+function conContexto(nombre, contexto) {
+    return contexto ? `${nombre} — ${contexto}` : nombre
+}
+
+function NuevoMovimientoDialog({
+    abierto, onCerrar, articulos, oficinas, categorias = [], dependencias = [],
+}) {
     const { recargar, notificar } = useDatos()
 
     const [articuloId, setArticuloId] = useState('')
@@ -20,7 +42,19 @@ function NuevoMovimientoDialog({ abierto, onCerrar, articulos, oficinas }) {
     const [error, setError] = useState('')
     const [guardando, setGuardando] = useState(false)
 
-    const articulo = articulos.find((a) => a.id === Number(articuloId))
+    const etiquetaArticulo = (a) => conContexto(
+        a.nombre,
+        categorias.find((c) => c.id === a.categoria_id)?.nombre
+    )
+    const etiquetaOficina = (o) => conContexto(
+        o.nombre,
+        dependencias.find((d) => d.id === o.dependencia_id)?.nombre
+    )
+
+    const articulosUnicos = sinDuplicados(articulos, etiquetaArticulo)
+    const oficinasUnicas = sinDuplicados(oficinas, etiquetaOficina)
+
+    const articulo = articulosUnicos.find((a) => a.id === Number(articuloId))
 
     async function registrar() {
         const cant = Number(cantidad)
@@ -81,9 +115,9 @@ function NuevoMovimientoDialog({ abierto, onCerrar, articulos, oficinas }) {
                     {error && <Alert severity="error">{error}</Alert>}
 
                     <Autocomplete
-                        options={articulos}
-                        getOptionLabel={(a) => a.nombre}
-                        value={articulos.find((a) => a.id === Number(articuloId)) || null}
+                        options={articulosUnicos}
+                        getOptionLabel={etiquetaArticulo}
+                        value={articulosUnicos.find((a) => a.id === Number(articuloId)) || null}
                         onChange={(e, nuevo) => { setArticuloId(nuevo ? nuevo.id : ''); setError('') }}
                         renderInput={(params) => <TextField {...params} label="Artículo" />}
                     />
@@ -154,9 +188,9 @@ function NuevoMovimientoDialog({ abierto, onCerrar, articulos, oficinas }) {
 
                     {tipo === 'salida' ? (
                         <Autocomplete
-                            options={oficinas}
-                            getOptionLabel={(o) => o.nombre}
-                            value={oficinas.find((o) => o.id === Number(oficinaId)) || null}
+                            options={oficinasUnicas}
+                            getOptionLabel={etiquetaOficina}
+                            value={oficinasUnicas.find((o) => o.id === Number(oficinaId)) || null}
                             onChange={(e, nueva) => { setOficinaId(nueva ? nueva.id : ''); setError('') }}
                             renderInput={(params) => <TextField {...params} label="Oficina de destino" />}
                         />
