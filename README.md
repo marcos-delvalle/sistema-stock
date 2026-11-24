@@ -44,15 +44,16 @@ artículos varios, dependencias (edificios), oficinas e historial de movimientos
 | Módulo | Para qué sirve |
 |---|---|
 | **Dashboard** | KPIs de stock, artículos bajo mínimo, actividad de los últimos 6 meses, alertas, últimos movimientos y distribución por dependencia. |
-| **Tóners** | Stock de tóners, compatibilidad con modelos de impresora, edición y baja. |
+| **Tóners** | Stock de tóners, compatibilidad con modelos de impresora, edición, baja y pestaña de tóners fallados. |
 | **Impresoras** | Modelos de impresora y unidades físicas asignadas a oficinas, con IP y estado. |
-| **Artículos** | Artículos del depósito (periféricos, cables, etc.), stock, stock mínimo, estado activo/inactivo y gestión de categorías. |
+| **Artículos** | Artículos del depósito (periféricos, cables, etc.), stock, stock mínimo, estado activo/inactivo, gestión de categorías, ajuste auditado de stock y baja definitiva de inactivos. |
 | **Dependencias** | Edificios o dependencias, con sus oficinas. Al expandir una oficina se ven sus impresoras y el historial de salidas. |
-| **Historial** | Entradas y salidas de stock, con fecha, artículo, cantidad y oficina de destino. |
-| **Nuevo movimiento** | Botón `+` para registrar una entrada al depósito o una salida a una oficina. |
+| **Historial** | Entradas, salidas y ajustes de stock, con fecha, artículo, cantidad, oficina de destino e indicador de falla. |
+| **Nuevo movimiento** | Botón `+` para registrar una entrada al depósito o una salida a una oficina (con opción de reportar un tóner como fallado). |
 
-La idea central es que **el stock no se edita a mano**: cambia únicamente al
-registrar una entrada o una salida. Así el historial y el stock siempre coinciden.
+La idea central es que **el stock no se edita a mano**: cambia al registrar una
+entrada, una salida o un **ajuste auditado**. Así el historial y el stock siempre
+coinciden.
 
 ---
 
@@ -517,6 +518,9 @@ Muestra:
 - Edición y baja lógica.
 - Al dar de baja un tóner, los modelos que lo usaban quedan sin tóner asignado
   (no se rompe el historial).
+- Dos pestañas: **Stock** y **Tóners fallados (N)**.
+- La pestaña de fallados muestra fecha, tóner y oficina de cada salida marcada
+  como falla. Se puede buscar por tóner u oficina y ordenar por fecha.
 
 ### 10.4 Impresoras
 
@@ -535,7 +539,14 @@ Una unidad siempre pertenece a un modelo y a una oficina.
 - Stock actual, stock mínimo y estado activo/inactivo.
 - Búsqueda y ordenamiento.
 - Alta, edición y baja lógica.
-- El stock **no** se edita en el formulario de edición: se cambia con movimientos.
+- El stock **no** se edita en el formulario de edición: se cambia con movimientos
+  o con **Ajustar stock**.
+- **Ajustar stock** pide el stock nuevo y un motivo obligatorio. Genera un
+  movimiento de tipo `Ajuste` en el historial, con el stock anterior y el nuevo.
+  No es una entrada ni una salida.
+- **Eliminar definitivamente** aparece solo para artículos inactivos. Borra el
+  artículo y todos sus movimientos, incluidos los reportes de falla. Es
+  irreversible y requiere confirmación explícita.
 
 ### 10.6 Dependencias y oficinas
 
@@ -551,10 +562,14 @@ Una unidad siempre pertenece a un modelo y a una oficina.
 
 ### 10.7 Historial
 
-- Entradas y salidas ordenadas por fecha.
+- Entradas, salidas y ajustes ordenados por fecha.
 - Muestra artículo, tipo, cantidad, fecha y oficina de destino.
 - Las entradas no tienen oficina (van al depósito).
 - Las salidas sí tienen oficina.
+- Los ajustes muestran el stock anterior, el nuevo y el motivo. No se editan:
+  para corregir un ajuste se registra uno nuevo.
+- Las salidas que reportaron un tóner fallado muestran un icono de advertencia.
+- La casilla **Solo con fallas** filtra el historial a esos movimientos.
 - Los movimientos cargados sin afectar stock se marcan con **No afecta stock**.
 
 ### 10.8 Nuevo movimiento
@@ -563,6 +578,12 @@ El botón `+` del menú lateral abre el diálogo para registrar:
 
 - **Entrada:** suma stock al depósito; no lleva oficina.
 - **Salida:** descuenta stock y exige una oficina activa.
+
+Si el tipo es **Salida** y el artículo elegido pertenece a la categoría Tóner,
+aparece la casilla **Reportar como fallado**. Al marcarla, la salida se guarda
+con `reporta_falla = true` y el tóner se lista en la pestaña de fallados de
+Tóners y en el Historial. No cambia el descuento de stock: se descuenta la
+cantidad del movimiento como en cualquier salida.
 
 Al lado de **Cantidad** hay una casilla marcada por defecto:
 
@@ -580,9 +601,10 @@ lo modifica.
 
 ## 11. Reglas de negocio
 
-1. **El stock cambia solo con movimientos.**
+1. **El stock cambia solo con movimientos o ajustes auditados.**
    Editar un artículo no permite cambiar `stock_actual`; solo nombre, categoría,
-   stock mínimo y estado.
+   stock mínimo y estado. El botón **Ajustar stock** actualiza el stock y deja
+   un movimiento de tipo `ajuste` con stock anterior, stock nuevo y motivo.
 
 2. **Entrada = depósito.**
    `tipo = 'entrada'` no lleva `oficina_id`.
@@ -612,7 +634,8 @@ lo modifica.
    - Oficina con impresoras asignadas: bloqueada.
    - Modelo con unidades: bloqueado.
    - Categoría con artículos: bloqueada.
-   - Artículo con movimientos: no se borra físicamente; se da de baja lógica.
+   - Artículo con movimientos: no se borra con la baja lógica. Primero se da de
+     baja lógica y después se puede usar **Eliminar definitivamente**.
 
 9. **Fechas.**
    La columna `fecha` es `DATE` y se devuelve como texto `YYYY-MM-DD` para evitar
@@ -622,6 +645,23 @@ lo modifica.
     Todos usan la misma cuenta `admin`; los movimientos no registran quién los
     hizo. Si en el futuro se necesita auditoría por persona, hay que agregar una
     tabla de usuarios y `usuario_id` en `movimientos`.
+
+11. **Ajustes inmutables.**
+    Un `ajuste` no lleva oficina, siempre afecta stock, exige `motivo` y guarda
+    `stock_anterior` y `stock_nuevo`. `cantidad` almacena la diferencia absoluta.
+    No se puede editar con `PUT /api/movimientos/:id`; se registra otro ajuste.
+
+12. **Baja definitiva.**
+    `DELETE /api/articulos/:id/definitivo` exige `activo = false`. En una
+    transacción borra todos los movimientos del artículo y después el artículo.
+    Los modelos que lo usaban como tóner quedan con `articulo_id = NULL`.
+    No se puede deshacer.
+
+13. **Fallas de tóner.**
+    `reporta_falla` solo puede ser `true` en una salida de un artículo de la
+    categoría Tóner. No crea una tabla aparte ni modifica el stock: el registro
+    de fallados se deriva de `movimientos`. Al eliminar definitivamente un
+    artículo, sus fallas también se eliminan.
 
 ---
 
@@ -636,7 +676,7 @@ modelos N ─────── 1 articulos        (compatibilidad tóner)
 unidades N ────── 1 modelos
 unidades N ────── 1 oficinas
 movimientos N ─── 1 articulos
-movimientos N ─── 0..1 oficinas      (entrada = NULL, salida = oficina)
+movimientos N ─── 0..1 oficinas      (entrada = NULL, salida = oficina, ajuste = NULL)
 ```
 
 | Tabla | Campos principales | Notas |
@@ -647,15 +687,35 @@ movimientos N ─── 0..1 oficinas      (entrada = NULL, salida = oficina)
 | `oficinas` | `id`, `nombre`, `dependencia_id`, `activo` | Única por dependencia + nombre. |
 | `modelos` | `id`, `marca`, `modelo`, `articulo_id` | Único por marca + modelo; `articulo_id` es el tóner. |
 | `unidades` | `id`, `modelo_id`, `nombre`, `oficina_id`, `ip`, `estado` | `estado`: `activa` o `inactiva`. |
-| `movimientos` | `id`, `articulo_id`, `tipo`, `cantidad`, `oficina_id`, `fecha`, `afecta_stock` | `tipo`: `entrada` o `salida`; `cantidad > 0`; `afecta_stock = false` no modifica el stock. |
+| `movimientos` | `id`, `articulo_id`, `tipo`, `cantidad`, `oficina_id`, `fecha`, `afecta_stock`, `reporta_falla`, `stock_anterior`, `stock_nuevo`, `motivo` | `tipo`: `entrada`, `salida` o `ajuste`; `cantidad > 0`; `afecta_stock = false` no modifica el stock; `reporta_falla` solo en salidas de tóner; los ajustes guardan stock anterior/nuevo y motivo. |
 
-Restricción importante en `movimientos`:
+Restricciones importantes en `movimientos`:
 
 ```sql
 CHECK (
   (tipo = 'entrada' AND oficina_id IS NULL)
   OR
   (tipo = 'salida' AND oficina_id IS NOT NULL)
+  OR
+  (tipo = 'ajuste' AND oficina_id IS NULL)
+)
+
+CHECK (
+  reporta_falla = false
+  OR (tipo = 'salida' AND oficina_id IS NOT NULL)
+)
+
+CHECK (
+  tipo <> 'ajuste' OR (
+    oficina_id IS NULL
+    AND afecta_stock = true
+    AND stock_anterior IS NOT NULL
+    AND stock_nuevo IS NOT NULL
+    AND stock_anterior <> stock_nuevo
+    AND cantidad = abs(stock_nuevo - stock_anterior)
+    AND motivo IS NOT NULL
+    AND length(trim(motivo)) > 0
+  )
 )
 ```
 
@@ -701,7 +761,9 @@ Invoke-RestMethod -Uri http://localhost:3000/api/categorias -WebSession $sesion
 | GET/POST | `/api/articulos` | Lista / alta (`stock_actual > 0` genera entrada) |
 | PUT | `/api/articulos/:id` | Edita nombre, categoría y stock mínimo (no el stock) |
 | PATCH | `/api/articulos/:id/activo` | Activa / desactiva |
+| PATCH | `/api/articulos/:id/stock` | Ajuste auditado de stock (`stock_nuevo`, `motivo`) |
 | DELETE | `/api/articulos/:id` | Baja lógica y desasigna modelos |
+| DELETE | `/api/articulos/:id/definitivo` | Borra un artículo inactivo y todos sus movimientos (irreversible) |
 | GET/POST | `/api/modelos` | Lista / alta |
 | PUT | `/api/modelos/:id` | Edición completa |
 | PUT | `/api/modelos/:id/compatibilidad` | Asigna / quita el tóner |
@@ -719,12 +781,14 @@ Invoke-RestMethod -Uri http://localhost:3000/api/categorias -WebSession $sesion
 | GET | `/api/oficinas/:id/unidades` | Impresoras de la oficina |
 | GET | `/api/oficinas/:id/movimientos` | Solo salidas de la oficina |
 | GET | `/api/movimientos` | Historial con filtros |
-| POST | `/api/movimientos` | Alta con transacción de stock (`afecta_stock: false` = solo historial) |
+| POST | `/api/movimientos` | Alta con transacción de stock (`afecta_stock: false` = solo historial; `reporta_falla` para salidas de tóner) |
+| PUT | `/api/movimientos/:id` | Edición de entradas y salidas (los ajustes no se editan) |
 
 Filtros:
 
 - `GET /api/articulos?categoria_id=1&activo=true`
 - `GET /api/movimientos?articulo_id=1&oficina_id=2&tipo=salida&desde=2026-01-01&hasta=2026-12-31`
+- `GET /api/movimientos?tipo=ajuste`
 - `GET /api/dependencias?activo=true`
 - `GET /api/oficinas?dependencia_id=1&activo=true`
 - `GET /api/unidades?oficina_id=1&modelo_id=2`
@@ -897,10 +961,12 @@ npm run build
 Después reiniciá el sistema para que tome el código nuevo (`nssm restart
 SistemaStock` si usás el servicio).
 
-> `db:migrate` es seguro para las tablas actuales porque usa `IF NOT EXISTS`.
-> Si en el futuro se agregan columnas a tablas existentes, habrá que crear
-> migraciones incrementales; no alcanza con `CREATE TABLE IF NOT EXISTS`.
-> Mientras tanto, este comando no borra datos.
+> `db:migrate` es idempotente: usa `IF NOT EXISTS`, `ADD COLUMN IF NOT EXISTS`
+> y `DROP CONSTRAINT IF EXISTS` antes de volver a crear las restricciones.
+> Esta versión agrega a `movimientos` las columnas `reporta_falla`,
+> `stock_anterior`, `stock_nuevo` y `motivo`, y amplía el tipo permitido a
+> `ajuste`. No borra datos. Si se agregan nuevas columnas en el futuro, hay que
+> mantener el mismo patrón incremental.
 
 ---
 
@@ -964,6 +1030,9 @@ SistemaStock` si usás el servicio).
 - [x] Carga de datos desde la API y Snackbar global.
 - [x] Diálogos de alta/edición guardando contra la API.
 - [x] Gestión de categorías desde la interfaz.
+- [x] Ajuste auditado de stock desde Artículos.
+- [x] Baja definitiva de artículos inactivos con su historial.
+- [x] Reporte de tóners fallados en salidas, pestaña en Tóners y filtro en Historial.
 - [x] Servido del front compilado en producción.
 - [x] Script `actualizar.ps1` para actualizar en producción.
 - [ ] Servicio de Windows con NSSM (opcional, para arranque automático).
@@ -977,6 +1046,8 @@ SistemaStock` si usás el servicio).
 4. Puesta en producción en la PC del trabajo: firewall, IP fija y respaldos programados.
 5. HTTPS opcional y rate limiting si se expone fuera de la LAN.
 6. Code splitting para reducir el tamaño del bundle de Material UI (opcional).
+7. Registrar la impresora/oficina donde falló el tóner y quién hizo el cambio
+   (hoy la falla se asocia al artículo y a la oficina de la salida).
 
 ---
 
@@ -1024,7 +1095,8 @@ Sugerencias de mensajes:
 | `src/context/DatosContext.jsx` | Carga y recarga de todos los datos. |
 | `src/pages/Login.jsx` | Pantalla de ingreso. |
 | `src/pages/` | Dashboard, Tóners, Impresoras, Artículos, Dependencias, Historial. |
-| `src/components/` | Diálogos de alta/edición, categorías y detalle de oficina. |
+| `src/components/` | Diálogos de alta/edición, categorías, ajuste de stock, baja definitiva y detalle de oficina. |
+| `src/utils/movimientos.js` | Etiquetas, colores, cantidades y destinos derivados de entradas, salidas y ajustes. |
 | `actualizar.ps1` | Actualización en producción: pull, install, db:start, migrate, build y reinicio del servicio (si existe). |
 | `server/index.js` | Arranque en `0.0.0.0` y apagado ordenado. |
 | `server/app.js` | Middlewares, rutas y servido de `dist/`. |

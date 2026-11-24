@@ -43,6 +43,7 @@ function MovimientoDialog({
     ))
     const [cantidad, setCantidad] = useState(movimiento?.cantidad ?? 1)
     const [afectaStock, setAfectaStock] = useState(movimiento?.afecta_stock ?? true)
+    const [reportaFalla, setReportaFalla] = useState(movimiento?.reporta_falla ?? false)
     const [oficinaId, setOficinaId] = useState(movimiento?.oficina_id ?? '')
     const [error, setError] = useState('')
     const [guardando, setGuardando] = useState(false)
@@ -68,6 +69,14 @@ function MovimientoDialog({
     )
 
     const articulo = articulosUnicos.find((a) => a.id === Number(articuloId))
+
+    const categoriaToner = categorias.find(
+        (c) => normalizar(c.nombre) === 'toner'
+    )
+    const esToner = Boolean(
+        articulo && categoriaToner && articulo.categoria_id === categoriaToner.id
+    )
+    const reportaFallaFinal = tipo === 'salida' && esToner ? reportaFalla : false
 
     // Si se edita un movimiento que afecta stock, el stock actual todavía
     // incluye su efecto. Este es el stock que quedaría disponible al revertirlo.
@@ -128,6 +137,7 @@ function MovimientoDialog({
                 oficina_id: tipo === 'salida' ? Number(oficinaId) : null,
                 fecha: fecha.format('YYYY-MM-DD'),
                 afecta_stock: afectaStock,
+                reporta_falla: reportaFallaFinal,
             }
 
             if (editando) {
@@ -160,7 +170,13 @@ function MovimientoDialog({
                         options={articulosUnicos}
                         getOptionLabel={etiquetaArticulo}
                         value={articulosUnicos.find((a) => a.id === Number(articuloId)) || null}
-                        onChange={(e, nuevo) => { setArticuloId(nuevo ? nuevo.id : ''); setError('') }}
+                        onChange={(e, nuevo) => {
+                            setArticuloId(nuevo ? nuevo.id : '')
+                            setError('')
+                            if (!nuevo || nuevo.categoria_id !== categoriaToner?.id) {
+                                setReportaFalla(false)
+                            }
+                        }}
                         renderInput={(params) => <TextField {...params} label="Artículo" />}
                     />
 
@@ -171,7 +187,10 @@ function MovimientoDialog({
                         onChange={(e) => {
                             const nuevo = e.target.value
                             setTipo(nuevo)
-                            if (nuevo === 'entrada') setOficinaId('')
+                            if (nuevo === 'entrada') {
+                                setOficinaId('')
+                                setReportaFalla(false)
+                            }
                             setError('')
                         }}
                     >
@@ -229,6 +248,22 @@ function MovimientoDialog({
                             sx={{ mt: { xs: 0, sm: 1 }, mr: 0, whiteSpace: 'nowrap' }}
                         />
                     </Box>
+
+                    {tipo === 'salida' && esToner && (
+                        <FormControlLabel
+                            control={
+                                <Checkbox
+                                    checked={reportaFalla}
+                                    onChange={(e) => {
+                                        setReportaFalla(e.target.checked)
+                                        setError('')
+                                    }}
+                                />
+                            }
+                            label="Reportar como fallado"
+                            sx={{ mt: -1 }}
+                        />
+                    )}
 
                     {tipo === 'salida' ? (
                         <Autocomplete

@@ -257,6 +257,8 @@ function Layout({ usuario }) {
                                 categorias={categorias}
                                 unidades={unidades}
                                 modelos={modelos}
+                                movimientos={movimientos}
+                                oficinas={oficinas}
                             />
                         } />
                         <Route path="/impresoras" element={

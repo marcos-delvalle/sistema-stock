@@ -7,22 +7,23 @@ import {
     Business, CalendarMonth, CheckCircle, History, Inventory2, Print,
     SwapHoriz, TrendingUp, WarningAmber,
 } from '@mui/icons-material'
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import EncabezadoPagina from '../components/EncabezadoPagina'
 import { formatearFecha } from '../utils/fecha'
+import {
+    cantidadVisible, colorTipo, destinoVisible, etiquetaTipo,
+} from '../utils/movimientos'
 
 const MESES_CORTOS = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic']
-
-// Fecha de referencia de la sesión. Evita llamar a `new Date()` en cada render.
-const HOY = new Date()
 
 function claveDeFecha(fecha) {
     return String(fecha).slice(0, 7)
 }
 
-function ultimosMeses(cantidad) {
+function ultimosMeses(cantidad, referencia) {
     return Array.from({ length: cantidad }, (_, i) => {
-        const fecha = new Date(HOY.getFullYear(), HOY.getMonth() - (cantidad - 1 - i), 1)
+        const fecha = new Date(referencia.getFullYear(), referencia.getMonth() - (cantidad - 1 - i), 1)
 
         return {
             clave: `${fecha.getFullYear()}-${String(fecha.getMonth() + 1).padStart(2, '0')}`,
@@ -118,7 +119,8 @@ function Dashboard({
 }) {
     const navigate = useNavigate()
 
-    const hoy = HOY
+    // Se calcula al montar la página; al volver a entrar se actualiza.
+    const [hoy] = useState(() => new Date())
     const claveMesActual = `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}`
 
     const activos = articulos.filter((a) => a.activo)
@@ -136,6 +138,7 @@ function Dashboard({
     const movimientosMes = movimientos.filter((m) => claveDeFecha(m.fecha) === claveMesActual)
     const entradasMes = movimientosMes.filter((m) => m.tipo === 'entrada').length
     const salidasMes = movimientosMes.filter((m) => m.tipo === 'salida').length
+    const ajustesMes = movimientosMes.filter((m) => m.tipo === 'ajuste').length
 
     // Agrupamos cantidades por mes una sola vez
     const movimientosPorMes = movimientos.reduce((acc, m) => {
@@ -149,7 +152,7 @@ function Dashboard({
         return acc
     }, {})
 
-    const datosMeses = ultimosMeses(6).map(({ clave, label }) => ({
+    const datosMeses = ultimosMeses(6, hoy).map(({ clave, label }) => ({
         clave,
         label,
         entradas: movimientosPorMes[clave]?.entradas || 0,
@@ -190,11 +193,6 @@ function Dashboard({
         return categorias.find((c) => c.id === id)?.nombre || 'Sin categoría'
     }
 
-    function destinoDe(m) {
-        if (m.tipo === 'entrada') return 'Depósito'
-        return m.oficina_nombre || oficinas.find((o) => o.id === m.oficina_id)?.nombre || '—'
-    }
-
     const detalleArticulos = inactivos > 0
         ? `${activos.length} activos · ${inactivos} inactivo${inactivos === 1 ? '' : 's'}`
         : `${activos.length} activos · ${categorias.length} categorías`
@@ -211,9 +209,21 @@ function Dashboard({
             ? `${modelos.length} modelos · ${unidadesInactivas} inactiva${unidadesInactivas === 1 ? '' : 's'}`
             : `${modelos.length} modelos · todas activas`
 
+    const partesMovimientos = []
+
+    if (entradasMes > 0) {
+        partesMovimientos.push(`${entradasMes} entrada${entradasMes === 1 ? '' : 's'}`)
+    }
+    if (salidasMes > 0) {
+        partesMovimientos.push(`${salidasMes} salida${salidasMes === 1 ? '' : 's'}`)
+    }
+    if (ajustesMes > 0) {
+        partesMovimientos.push(`${ajustesMes} ajuste${ajustesMes === 1 ? '' : 's'}`)
+    }
+
     const detalleMovimientos = movimientosMes.length === 0
         ? 'Sin movimientos este mes'
-        : `${entradasMes} entrada${entradasMes === 1 ? '' : 's'} · ${salidasMes} salida${salidasMes === 1 ? '' : 's'}`
+        : partesMovimientos.join(' · ')
 
     return (
         <>
@@ -457,8 +467,8 @@ function Dashboard({
                                             </Typography>
                                             <Chip
                                                 size="small"
-                                                label={m.tipo === 'entrada' ? 'Entrada' : 'Salida'}
-                                                color={m.tipo === 'entrada' ? 'success' : 'primary'}
+                                                label={etiquetaTipo(m.tipo)}
+                                                color={colorTipo(m.tipo)}
                                             />
                                         </Box>
 
@@ -479,10 +489,10 @@ function Dashboard({
                                             }}
                                         >
                                             <Typography variant="body2" color="text.secondary" noWrap>
-                                                {destinoDe(m)}
+                                                {destinoVisible(m, oficinas)}
                                             </Typography>
                                             <Typography variant="body2" sx={{ whiteSpace: 'nowrap' }}>
-                                                Cant.: {m.cantidad}
+                                                Cant.: {cantidadVisible(m)}
                                             </Typography>
                                         </Box>
 
@@ -533,8 +543,8 @@ function Dashboard({
                                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, flexWrap: 'wrap' }}>
                                                     <Chip
                                                         size="small"
-                                                        label={m.tipo === 'entrada' ? 'Entrada' : 'Salida'}
-                                                        color={m.tipo === 'entrada' ? 'success' : 'primary'}
+                                                        label={etiquetaTipo(m.tipo)}
+                                                        color={colorTipo(m.tipo)}
                                                     />
                                                     {m.afecta_stock === false && (
                                                         <Chip
@@ -545,9 +555,9 @@ function Dashboard({
                                                     )}
                                                 </Box>
                                             </TableCell>
-                                            <TableCell align="right">{m.cantidad}</TableCell>
+                                            <TableCell align="right">{cantidadVisible(m)}</TableCell>
                                             <TableCell sx={{ display: { xs: 'none', sm: 'table-cell' } }}>
-                                                {destinoDe(m)}
+                                                {destinoVisible(m, oficinas)}
                                             </TableCell>
                                         </TableRow>
                                     ))}

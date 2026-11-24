@@ -3,11 +3,13 @@ import {
     Paper, Chip, Button, Box, FormControlLabel, IconButton, Switch,
     Typography, Tooltip, TableSortLabel,
 } from '@mui/material'
-import { Category, Delete, Edit } from '@mui/icons-material'
+import { Category, Delete, DeleteForever, Edit, Tune } from '@mui/icons-material'
 import { useState } from 'react'
 import { api } from '../api/client'
+import AjusteStockDialog from '../components/AjusteStockDialog'
 import ArticuloDialog from '../components/ArticuloDialog'
 import CategoriaDialog from '../components/CategoriaDialog'
+import EliminarDefinitivoDialog from '../components/EliminarDefinitivoDialog'
 import Buscador from '../components/Buscador'
 import EncabezadoPagina from '../components/EncabezadoPagina'
 import { useDatos } from '../context/DatosContext'
@@ -22,6 +24,8 @@ function Articulos({ articulos, categorias }) {
     const [mostrarInactivos, setMostrarInactivos] = useState(false)
     const [orden, setOrden] = useState({ campo: 'nombre', dir: 'asc' })
     const [busqueda, setBusqueda] = useState('')
+    const [articuloAjuste, setArticuloAjuste] = useState(null)
+    const [articuloEliminar, setArticuloEliminar] = useState(null)
 
     function abrirNuevo() {
         setArticuloEditando(null)
@@ -206,6 +210,14 @@ function Articulos({ articulos, categorias }) {
                                         </Typography>
                                     </Box>
                                     <Box sx={{ display: 'flex', gap: 0.5, mt: -0.5, mr: -1 }}>
+                                        <Tooltip title="Ajustar stock">
+                                            <IconButton
+                                                onClick={() => setArticuloAjuste(a)}
+                                                aria-label={`Ajustar stock de ${a.nombre}`}
+                                            >
+                                                <Tune fontSize="small" />
+                                            </IconButton>
+                                        </Tooltip>
                                         <Tooltip title="Editar">
                                             <IconButton
                                                 onClick={() => abrirEdicion(a)}
@@ -214,7 +226,7 @@ function Articulos({ articulos, categorias }) {
                                                 <Edit fontSize="small" />
                                             </IconButton>
                                         </Tooltip>
-                                        {a.activo && (
+                                        {a.activo ? (
                                             <Tooltip title="Eliminar">
                                                 <IconButton
                                                     color="error"
@@ -222,6 +234,16 @@ function Articulos({ articulos, categorias }) {
                                                     aria-label={`Eliminar ${a.nombre}`}
                                                 >
                                                     <Delete fontSize="small" />
+                                                </IconButton>
+                                            </Tooltip>
+                                        ) : (
+                                            <Tooltip title="Eliminar definitivamente">
+                                                <IconButton
+                                                    color="error"
+                                                    onClick={() => setArticuloEliminar(a)}
+                                                    aria-label={`Eliminar definitivamente ${a.nombre}`}
+                                                >
+                                                    <DeleteForever fontSize="small" />
                                                 </IconButton>
                                             </Tooltip>
                                         )}
@@ -283,6 +305,14 @@ function Articulos({ articulos, categorias }) {
                                         />
                                     </TableCell>
                                     <TableCell align="right">
+                                        <Tooltip title="Ajustar stock">
+                                            <IconButton
+                                                onClick={() => setArticuloAjuste(a)}
+                                                aria-label={`Ajustar stock de ${a.nombre}`}
+                                            >
+                                                <Tune fontSize="small" />
+                                            </IconButton>
+                                        </Tooltip>
                                         <Tooltip title="Editar">
                                             <IconButton
                                                 onClick={() => abrirEdicion(a)}
@@ -291,7 +321,7 @@ function Articulos({ articulos, categorias }) {
                                                 <Edit fontSize="small" />
                                             </IconButton>
                                         </Tooltip>
-                                        {a.activo && (
+                                        {a.activo ? (
                                             <Tooltip title="Eliminar">
                                                 <IconButton
                                                     color="error"
@@ -299,6 +329,16 @@ function Articulos({ articulos, categorias }) {
                                                     aria-label={`Eliminar ${a.nombre}`}
                                                 >
                                                     <Delete fontSize="small" />
+                                                </IconButton>
+                                            </Tooltip>
+                                        ) : (
+                                            <Tooltip title="Eliminar definitivamente">
+                                                <IconButton
+                                                    color="error"
+                                                    onClick={() => setArticuloEliminar(a)}
+                                                    aria-label={`Eliminar definitivamente ${a.nombre}`}
+                                                >
+                                                    <DeleteForever fontSize="small" />
                                                 </IconButton>
                                             </Tooltip>
                                         )}
@@ -309,6 +349,24 @@ function Articulos({ articulos, categorias }) {
                     </Table>
                     </TableContainer>
                 </>
+            )}
+
+            {articuloAjuste && (
+                <AjusteStockDialog
+                    key={articuloAjuste.id}
+                    abierto
+                    articulo={articuloAjuste}
+                    onCerrar={() => setArticuloAjuste(null)}
+                />
+            )}
+
+            {articuloEliminar && (
+                <EliminarDefinitivoDialog
+                    key={articuloEliminar.id}
+                    abierto
+                    articulo={articuloEliminar}
+                    onCerrar={() => setArticuloEliminar(null)}
+                />
             )}
         </>
     )

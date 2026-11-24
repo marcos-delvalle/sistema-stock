@@ -13,6 +13,19 @@ import {
 
 export const rutasMovimientos = Router()
 
+// "Tóner" con o sin acento, en cualquier combinación de mayúsculas.
+function normalizarTexto(texto) {
+  return String(texto || '')
+    .trim()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+}
+
+function esCategoriaToner(nombre) {
+  return normalizarTexto(nombre) === 'toner'
+}
+
 function leerMovimiento(body) {
   const articuloId = enteroPositivo(body?.articulo_id, 'articulo_id')
   const cantidad = enteroPositivo(body?.cantidad, 'cantidad')
@@ -24,6 +37,7 @@ function leerMovimiento(body) {
     ? fechaOpcional(body.fecha, 'fecha')
     : null
   const afectaStock = booleano(body?.afecta_stock, 'afecta_stock', true)
+  const reportaFalla = booleano(body?.reporta_falla, 'reporta_falla', false)
 
   if (tipo !== 'entrada' && tipo !== 'salida') {
     throw new ErrorHttp(400, 'El campo "tipo" debe ser "entrada" o "salida"')
@@ -37,14 +51,30 @@ function leerMovimiento(body) {
     throw new ErrorHttp(400, 'Una salida debe indicar la oficina de destino')
   }
 
-  return { articuloId, cantidad, tipo, oficinaId, fecha, afectaStock }
+  if (reportaFalla && tipo !== 'salida') {
+    throw new ErrorHttp(400, 'Solo las salidas pueden reportar una falla')
+  }
+
+  return { articuloId, cantidad, tipo, oficinaId, fecha, afectaStock, reportaFalla }
+}
+
+function validarReportaFalla(reportaFalla, tipo, categoriaNombre) {
+  if (!reportaFalla) return
+
+  if (tipo !== 'salida') {
+    throw new ErrorHttp(400, 'Solo las salidas pueden reportar una falla')
+  }
+
+  if (!esCategoriaToner(categoriaNombre)) {
+    throw new ErrorHttp(400, 'Solo se puede reportar la falla de un tóner')
+  }
 }
 
 async function consultarDetalle(cliente, id) {
   const { rows } = await cliente.query(
     `SELECT m.id, m.articulo_id, a.nombre AS articulo_nombre,
             m.tipo, m.cantidad, m.oficina_id, o.nombre AS oficina_nombre, m.fecha,
-            m.afecta_stock
+            m.afecta_stock, m.reporta_falla, m.stock_anterior, m.stock_nuevo, m.motivo
      FROM movimientos m
      JOIN articulos a ON a.id = m.articulo_id
      LEFT JOIN oficinas o ON o.id = m.oficina_id
@@ -63,14 +93,14 @@ rutasMovimientos.get('/', asyncHandler(async (req, res) => {
 
   const tipo = req.query.tipo ?? null
 
-  if (tipo !== null && tipo !== 'entrada' && tipo !== 'salida') {
-    throw new ErrorHttp(400, 'El filtro "tipo" debe ser "entrada" o "salida"')
+  if (tipo !== null && tipo !== 'entrada' && tipo !== 'salida' && tipo !== 'ajuste') {
+    throw new ErrorHttp(400, 'El filtro "tipo" debe ser "entrada", "salida" o "ajuste"')
   }
 
   const { rows } = await consultar(
     `SELECT m.id, m.articulo_id, a.nombre AS articulo_nombre,
             m.tipo, m.cantidad, m.oficina_id, o.nombre AS oficina_nombre, m.fecha,
-            m.afecta_stock
+            m.afecta_stock, m.reporta_falla, m.stock_anterior, m.stock_nuevo, m.motivo
      FROM movimientos m
      JOIN articulos a ON a.id = m.articulo_id
      LEFT JOIN oficinas o ON o.id = m.oficina_id
@@ -98,15 +128,18 @@ rutasMovimientos.get('/', asyncHandler(async (req, res) => {
  * Si cualquier paso falla, ROLLBACK: no queda stock descontado sin movimiento.
  */
 rutasMovimientos.post('/', asyncHandler(async (req, res) => {
-  const { articuloId, cantidad, tipo, oficinaId, fecha, afectaStock } = leerMovimiento(req.body)
+  const {
+    articuloId, cantidad, tipo, oficinaId, fecha, afectaStock, reportaFalla,
+  } = leerMovimiento(req.body)
 
   try {
     const movimiento = await enTransaccion(async (cliente) => {
       const { rows: filasArticulo } = await cliente.query(
-        `SELECT id, stock_actual, activo
-         FROM articulos
-         WHERE id = $1
-         FOR UPDATE`,
+        `SELECT a.id, a.stock_actual, a.activo, c.nombre AS categoria_nombre
+         FROM articulos a
+         JOIN categorias c ON c.id = a.categoria_id
+         WHERE a.id = $1
+         FOR UPDATE OF a`,
         [articuloId]
       )
 
@@ -119,6 +152,8 @@ rutasMovimientos.post('/', asyncHandler(async (req, res) => {
       if (!articulo.activo) {
         throw new ErrorHttp(409, 'El artículo está inactivo')
       }
+
+      validarReportaFalla(reportaFalla, tipo, articulo.categoria_nombre)
 
       if (tipo === 'salida') {
         const { rowCount } = await cliente.query(
@@ -152,10 +187,12 @@ rutasMovimientos.post('/', asyncHandler(async (req, res) => {
       }
 
       const { rows } = await cliente.query(
-        `INSERT INTO movimientos (articulo_id, tipo, cantidad, oficina_id, fecha, afecta_stock)
-         VALUES ($1, $2, $3, $4, COALESCE($5::date, CURRENT_DATE), $6)
+        `INSERT INTO movimientos (
+           articulo_id, tipo, cantidad, oficina_id, fecha, afecta_stock, reporta_falla
+         )
+         VALUES ($1, $2, $3, $4, COALESCE($5::date, CURRENT_DATE), $6, $7)
          RETURNING id`,
-        [articuloId, tipo, cantidad, oficinaId, fecha, afectaStock]
+        [articuloId, tipo, cantidad, oficinaId, fecha, afectaStock, reportaFalla]
       )
 
       return consultarDetalle(cliente, rows[0].id)
@@ -196,15 +233,21 @@ rutasMovimientos.put('/:id', asyncHandler(async (req, res) => {
         throw new ErrorHttp(404, 'Movimiento no encontrado')
       }
 
+      // Los ajustes son registros de auditoría: no se editan.
+      if (actual.tipo === 'ajuste') {
+        throw new ErrorHttp(400, 'Los ajustes no se editan; registrá un nuevo ajuste')
+      }
+
       const idsArticulos = [...new Set([actual.articulo_id, nuevo.articuloId])]
         .sort((a, b) => a - b)
 
       const { rows: filasArticulos } = await cliente.query(
-        `SELECT id, nombre, stock_actual, activo
-         FROM articulos
-         WHERE id = ANY($1::int[])
-         ORDER BY id
-         FOR UPDATE`,
+        `SELECT a.id, a.nombre, a.stock_actual, a.activo, c.nombre AS categoria_nombre
+         FROM articulos a
+         JOIN categorias c ON c.id = a.categoria_id
+         WHERE a.id = ANY($1::int[])
+         ORDER BY a.id
+         FOR UPDATE OF a`,
         [idsArticulos]
       )
 
@@ -220,6 +263,8 @@ rutasMovimientos.put('/:id', asyncHandler(async (req, res) => {
       if (nuevo.articuloId !== actual.articulo_id && !articuloNuevo.activo) {
         throw new ErrorHttp(409, 'El artículo está inactivo')
       }
+
+      validarReportaFalla(nuevo.reportaFalla, nuevo.tipo, articuloNuevo.categoria_nombre)
 
       if (nuevo.tipo === 'salida') {
         const { rows: filasOficina } = await cliente.query(
@@ -288,8 +333,9 @@ rutasMovimientos.put('/:id', asyncHandler(async (req, res) => {
       await cliente.query(
         `UPDATE movimientos
          SET articulo_id = $1, tipo = $2, cantidad = $3, oficina_id = $4,
-             fecha = COALESCE($5::date, fecha), afecta_stock = $6
-         WHERE id = $7`,
+             fecha = COALESCE($5::date, fecha), afecta_stock = $6,
+             reporta_falla = $7
+         WHERE id = $8`,
         [
           nuevo.articuloId,
           nuevo.tipo,
@@ -297,6 +343,7 @@ rutasMovimientos.put('/:id', asyncHandler(async (req, res) => {
           nuevo.oficinaId,
           nuevo.fecha,
           nuevo.afectaStock,
+          nuevo.reportaFalla,
           id,
         ]
       )

@@ -125,6 +125,77 @@ rutasArticulos.put('/:id', asyncHandler(async (req, res) => {
   }
 }))
 
+/**
+ * Ajuste manual de stock.
+ * No es una entrada ni una salida: actualiza stock_actual y deja un registro
+ * de tipo 'ajuste' en el historial con el stock anterior, el nuevo y el motivo.
+ * El stock siempre queda respaldado por un movimiento auditable.
+ */
+rutasArticulos.patch('/:id/stock', asyncHandler(async (req, res) => {
+  const id = idDesdeParams(req.params.id)
+
+  if (
+    req.body?.stock_nuevo === undefined
+    || req.body?.stock_nuevo === null
+    || req.body?.stock_nuevo === ''
+  ) {
+    throw new ErrorHttp(400, 'El campo "stock_nuevo" es obligatorio')
+  }
+
+  const stockNuevo = enteroNoNegativo(req.body.stock_nuevo, 'stock_nuevo')
+  const motivo = textoObligatorio(req.body?.motivo, 'motivo', 200)
+
+  try {
+    const articulo = await enTransaccion(async (cliente) => {
+      const { rows } = await cliente.query(
+        `SELECT id, nombre, stock_actual
+         FROM articulos
+         WHERE id = $1
+         FOR UPDATE`,
+        [id]
+      )
+
+      const actual = rows[0]
+
+      if (!actual) {
+        throw new ErrorHttp(404, 'Artículo no encontrado')
+      }
+
+      if (actual.stock_actual === stockNuevo) {
+        throw new ErrorHttp(400, 'El stock nuevo debe ser distinto del stock actual')
+      }
+
+      await cliente.query(
+        `UPDATE articulos
+         SET stock_actual = $1, actualizado_en = now()
+         WHERE id = $2`,
+        [stockNuevo, id]
+      )
+
+      await cliente.query(
+        `INSERT INTO movimientos (
+           articulo_id, tipo, cantidad, oficina_id, fecha, afecta_stock,
+           stock_anterior, stock_nuevo, motivo
+         )
+         VALUES ($1, 'ajuste', $2, NULL, CURRENT_DATE, true, $3, $4, $5)`,
+        [
+          id,
+          Math.abs(stockNuevo - actual.stock_actual),
+          actual.stock_actual,
+          stockNuevo,
+          motivo,
+        ]
+      )
+
+      return { ...actual, stock_actual: stockNuevo }
+    })
+
+    res.json(articulo)
+  } catch (error) {
+    throw traducirErrorDb(error)
+  }
+}))
+
 rutasArticulos.patch('/:id/activo', asyncHandler(async (req, res) => {
   const id = idDesdeParams(req.params.id)
   const activo = req.body?.activo
@@ -146,6 +217,56 @@ rutasArticulos.patch('/:id/activo', asyncHandler(async (req, res) => {
   }
 
   res.json(rows[0])
+}))
+
+/**
+ * Baja definitiva de un artículo inactivo.
+ * Borra el artículo y todo su historial de movimientos en una sola transacción.
+ * Está pensada para limpiar artículos cargados por error: es irreversible.
+ * Los modelos que lo usaban como tóner quedan sin asignar por la FK
+ * ON DELETE SET NULL de modelos.articulo_id.
+ */
+rutasArticulos.delete('/:id/definitivo', asyncHandler(async (req, res) => {
+  const id = idDesdeParams(req.params.id)
+
+  try {
+    await enTransaccion(async (cliente) => {
+      const { rows } = await cliente.query(
+        `SELECT id, nombre, activo
+         FROM articulos
+         WHERE id = $1
+         FOR UPDATE`,
+        [id]
+      )
+
+      const articulo = rows[0]
+
+      if (!articulo) {
+        throw new ErrorHttp(404, 'Artículo no encontrado')
+      }
+
+      if (articulo.activo) {
+        throw new ErrorHttp(
+          409,
+          'Primero dá de baja el artículo antes de eliminarlo definitivamente'
+        )
+      }
+
+      await cliente.query(
+        'DELETE FROM movimientos WHERE articulo_id = $1',
+        [id]
+      )
+
+      await cliente.query(
+        'DELETE FROM articulos WHERE id = $1',
+        [id]
+      )
+    })
+
+    res.status(204).end()
+  } catch (error) {
+    throw traducirErrorDb(error)
+  }
 }))
 
 /**
